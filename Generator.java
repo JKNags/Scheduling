@@ -59,8 +59,11 @@ public class Generator {
 			for (File file : files) {
 				if (!file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) continue;
 				
-				int fileNum = Integer.parseInt(file.getName().substring(4, file.getName().indexOf(".txt")));
-				if (fileNum > maxFileNum) maxFileNum = fileNum; 
+				int fileNum;
+				try {
+					fileNum = Integer.parseInt(file.getName().substring(4, file.getName().indexOf(".txt")));
+					if (fileNum > maxFileNum) maxFileNum = fileNum; 
+				} catch (NumberFormatException e) {}
 			}
 			
 			// Write new file
@@ -70,6 +73,8 @@ public class Generator {
 	            System.out.println("File Already Exists!");
 	        }
 			 
+	        System.out.println("Writing file: " + fileName);
+	        
 	        BufferedWriter writer = new BufferedWriter(new FileWriter(fileName));
 	        writer.write(output);
 	        writer.close();

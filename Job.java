@@ -4,16 +4,18 @@ import java.util.ArrayList;
 
 public class Job {
 	
+	// Static Variables
+	// TODO: find better way to count total number of machines PER FILE
+	private static int numMachines = 0;
+	
 	// Instance Variables
 	private int number;
-	private ArrayList<Integer> taskMachineNum;
-	private ArrayList<Integer> taskProcessTime;			// TODO: make new Task object?
+	private ArrayList<Task> tasks;
 	
 	// Constructor
 	public Job(int number) {
+		tasks = new ArrayList<Task>();
 		this.number = number;
-		taskMachineNum = new ArrayList<Integer>();
-		taskProcessTime = new ArrayList<Integer>();
 	}
 	
 	// Getters
@@ -21,17 +23,30 @@ public class Job {
 		return this.number;
 	}
 	
+	public ArrayList<Task> getTasks() {
+		return this.tasks;
+	}
+	
+	public static int getNumMachines() {
+		return numMachines;
+	}
+	
 	// Setters
 	public void addTask(int machineNum, int processTime) {
-		taskMachineNum.add(machineNum);
-		taskProcessTime.add(processTime);
+		tasks.add(new Task(this, machineNum, processTime));
+		
+		if (machineNum + 1 > numMachines) numMachines = machineNum + 1; 
+	}
+	
+	public static void resetNumMachines() {
+		numMachines = 0;
 	}
 	
 	// To String
 	public String toString() {
-		String output = "Task " + number + ": [";
-		for (int idx = 0; idx < taskMachineNum.size(); idx++) {
-			output += "(m=" + taskMachineNum.get(idx) + ", t=" + taskProcessTime.get(idx) + "), ";
+		String output = "Job " + number + ": [";
+		for (Task task : this.tasks) {
+			output += task + ", ";
 		}
 		
 		return output.substring(0, output.length() - 2) + "]";

@@ -17,10 +17,11 @@ public class Scheduler {
 		String dirName = "data";
 		File[] files = getFilesInFolder(dirName);
 		int choice = 0;
-		Scanner inputScanner = new Scanner(System.in);
-			
+		Scanner inputScanner = new Scanner(System.in);		
+		
 		while (true) {			
-			System.out.println("Select file number. Enter 0 to Exit.");
+			System.out.println("***********************************************");
+			System.out.println("\nSelect file number. Enter 0 to Exit.");
 			printFiles(files);
 			
 			choice = inputScanner.nextInt();   // Get selection
@@ -43,19 +44,43 @@ public class Scheduler {
 	}
 	
 	// Schedule jobs
-	// TODO: error handling for integer parsing
 	private static void scheduleJobs(File file) {
+		ArrayList<Job> jobs = getJobsFromFile(file);
+		ArrayList<Schedule> schedules = new ArrayList<Schedule>();
+		int populationSize = 1;
+		
+		for (Job j : jobs) {
+			System.out.println(j);
+		}
+		
+		System.out.println("Num Machines: " + Job.getNumMachines());
+		
+		// Create the initial population
+		for (int idx = 0; idx < populationSize; idx++) {
+			Schedule schedule = new Schedule();
+			schedule.randomize(jobs);
+			
+			schedules.add(schedule);
+		}
+		
+	}
+	
+	// Return a list of jobs from file
+	public static ArrayList<Job> getJobsFromFile(File file) {
 		Scanner scanner = null;
 		ArrayList<Job> jobs = new ArrayList<Job>(); 
 		Job job = null;
 		String[] lineSplit;
+		
+		Job.resetNumMachines();
 		
 		try {
 			scanner = new Scanner(file);
 			
 			while (scanner.hasNext()) {
 				lineSplit = scanner.nextLine().split(" ");
-				if (lineSplit.length != 2) throw new RuntimeException("\nError parsing file - line does not have two components");
+				if (lineSplit.length != 2) 
+					throw new RuntimeException("\nError parsing file - line does not have exactly two elements");
 				
 				if (lineSplit[0].equals("JOB")) {   // Found new job
 					job = new Job(Integer.parseInt(lineSplit[1]));
@@ -70,9 +95,7 @@ public class Scheduler {
 			scanner.close();
 		}
 		
-		for (Job j : jobs) {
-			System.out.println(j);
-		}
+		return jobs;
 	}
 	
 	// Return all text files in folder
