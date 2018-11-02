@@ -8,13 +8,11 @@ public class Problem {
 	int numMachines;
 	int numJobs;
 	ArrayList<Job> jobs;
-	int[][] processTimes;
 	
 	// Constructor
-	public Problem(int numMachines, ArrayList<Job> jobs, int[][] processTimes) {
+	public Problem(int numMachines, ArrayList<Job> jobs) {
 		this.numMachines = numMachines;
 		this.jobs = jobs;
-		this.processTimes = processTimes;
 		this.numJobs = jobs.size();
 	}
 	
@@ -25,10 +23,6 @@ public class Problem {
 	
 	public ArrayList<Job> getJobs() {
 		return this.jobs;
-	}
-	
-	public int[][] getProcessTimes() {
-		return this.processTimes;
 	}
 	
 	public int getNumJobs() {
@@ -43,13 +37,13 @@ public class Problem {
 			output += "M" + i + "\t";
 		}
 		output += "\n";
-		for (int i = 0; i < this.processTimes[0].length + 2; i++) {
+		for (int i = 0; i < this.numMachines + 2; i++) {
 			output += "-------";
 		}
 		output += "\n";
 		for (Job job : jobs) {
 			output += "J" + job.getNumber() + "\t" + job.getArrivalTime();
-			for (int processTime : this.processTimes[job.getNumber()]) {
+			for (int processTime : job.getProcessTimes()) {
 				output += "\t" + processTime;
 			}
 			output += "\n";

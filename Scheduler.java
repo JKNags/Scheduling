@@ -27,7 +27,6 @@ public class Scheduler {
 			// TODO: catch first line
 			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
 			
-			// TODO: enable choice
 			choice = inputScanner.nextInt();   // Get selection
 			
 			if (choice >= 1 && choice <= files.length) {
@@ -36,7 +35,6 @@ public class Scheduler {
 				
 				if (choice >= 1 && choice <= files.length) {
 					scheduleJobs(files[choice - 1]);
-					scheduleJobs(files[5]);
 				}
 				
 				long stopTime = System.nanoTime();
@@ -50,7 +48,7 @@ public class Scheduler {
 	
 	// Schedule jobs
 	private static void scheduleJobs(File file) {
-		Problem problem = getProblemDefinition(file);
+		Problem problem = getProblemFromFile(file);
 		ArrayList<Schedule> population = new ArrayList<Schedule>();
 		int populationSize = 10;
 		
@@ -69,12 +67,12 @@ public class Scheduler {
 	}
 	
 	// Return a list of jobs from file
-	public static Problem getProblemDefinition(File file) {
+	public static Problem getProblemFromFile(File file) {
 		Scanner scanner = null;
 		ArrayList<Job> jobs = new ArrayList<Job>(); 
 		String[] lineSplit;
-		int numMachines = 0, numJobs = 0, jobNumber, arrivalTime;
-		int[][] processTimes = null;
+		int numMachines = 0, jobNumber, arrivalTime;
+		int[] processTimes = null;
 
 		try {
 			scanner = new Scanner(file);
@@ -87,27 +85,19 @@ public class Scheduler {
 				numMachines = Integer.parseInt(lineSplit[1]);
 			}
 			
-			// Get number of jobs
-			if (scanner.hasNext()) {
-				lineSplit = scanner.nextLine().split(" ");
-				if (lineSplit.length != 2) 
-					throw new RuntimeException("\nError parsing file - Jobs line does not have exactly two elements");
-				numJobs = Integer.parseInt(lineSplit[1]);
-			}
-			
-			processTimes = new int[numJobs][numMachines];
+			processTimes = new int[numMachines];
 			
 			// Get jobs
 			while (scanner.hasNext()) {
 				lineSplit = scanner.nextLine().split(" ");
 				if (lineSplit.length != (3 + numMachines)) 
-					throw new RuntimeException("\nError parsing file - Job line does not have 2 + numMachines elements");
+					throw new RuntimeException("\nError parsing file - Job line does not have 3 + numMachines elements");
 				jobNumber = Integer.parseInt(lineSplit[1]);
 				arrivalTime = Integer.parseInt(lineSplit[2]);
 				for (int mIdx = 0; mIdx < numMachines; mIdx++) {
-					processTimes[jobNumber][mIdx] = Integer.parseInt(lineSplit[mIdx + 3]);
+					processTimes[mIdx] = Integer.parseInt(lineSplit[mIdx + 3]);
 				}
-				jobs.add(new Job(jobNumber, arrivalTime));
+				jobs.add(new Job(jobNumber, arrivalTime, processTimes.clone()));
 			}
 		} catch (FileNotFoundException | NumberFormatException e) {
 			e.printStackTrace();
@@ -115,7 +105,7 @@ public class Scheduler {
 			scanner.close();
 		}
 		
-		return new Problem(numMachines, jobs, processTimes);
+		return new Problem(numMachines, jobs);
 	}
 	
 	// Return all text files in folder

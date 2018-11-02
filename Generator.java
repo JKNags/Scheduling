@@ -20,14 +20,14 @@ public class Generator {
 		String dirName = "data";
 		
 		// Input Variables //
-		int minNumMachines = 4;
+		int minNumMachines = 3;
 		int maxNumMachines = 6;
-		int minNumJobs = 30;
-		int maxNumJobs = 80;
+		int minNumJobs = 60;
+		int maxNumJobs = 90;
 		int minArrivalTime = 0;
-		int maxArrivalTime = 10;
-		int minProcessTime = 2;
-		int maxProcessTime = 7;
+		int maxArrivalTime = 6;
+		int minProcessTime = 1;
+		int maxProcessTime = 8;
 		
 		// Print number of machines
 		int numMachines = rand.nextInt(maxNumMachines - minNumMachines + 1) + minNumMachines;		
@@ -35,7 +35,6 @@ public class Generator {
 		
 		// Print number of jobs
 		int numJobs = rand.nextInt(maxNumJobs - minNumJobs + 1) + minNumJobs;
-		output += "JOBS " + numJobs + "\n";
 		
 		// Print jobs
 		for (int j = 0; j < numJobs; j++) {				// JOB <number> <arrival time> {<process time for each machine>}

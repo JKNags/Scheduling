@@ -5,13 +5,13 @@ public class Job {
 	// Instance Variables
 	private int number;
 	private int arrivalTime;
-	//private int[] processTimes;
+	private int[] processTimes;
 	
 	// Constructor
-	public Job(int number, int arrivalTime/*, int[] processTimes*/) {
+	public Job(int number, int arrivalTime, int[] processTimes) {
 		this.number = number;
 		this.arrivalTime = arrivalTime;
-		//this.processTimes = processTimes;
+		this.processTimes = processTimes;
 	}
 	
 	// Getters
@@ -23,15 +23,19 @@ public class Job {
 		return this.arrivalTime;
 	}
 	
-	/*public int[] getProcessTime() {
+	public int[] getProcessTimes() {
 		return this.processTimes;
-	}*/
-
+	}
+	
+	public int getProcessTime(int machineNum) {
+		return this.processTimes[machineNum];
+	}
+	
 	// Setters
 
 	// To String
 	public String toString() {
-		return "Job " + this.number + " A = " + this.arrivalTime;  //+ ", P=" + this.processTimes;
+		return "J" + this.number;
 	}
 	
 }

@@ -39,13 +39,12 @@ public class Schedule {
 		int[] numAssignments = new int[problem.getNumJobs()];
 		Arrays.fill(numAssignments, 0);
 		Job job = null;
-		@SuppressWarnings("unchecked")   // ??
+		@SuppressWarnings("unchecked")   //TODO what??
 		ArrayList<Job> incompleteJobs = (ArrayList<Job>) problem.getJobs().clone();
 		ArrayList<Job> availableJobs = new ArrayList<Job>();
 		
 		for (ArrayList<Assignment> a : this.assignments) a.clear();
 		
-		//int tmpIdx = 0;int[] tmpA = {1, 2, 0, 3, 4};
 		while (true) {
 			// Add any new jobs for current time
 			for (Job newJob : incompleteJobs) {
@@ -55,19 +54,20 @@ public class Schedule {
 			
 			// Select random available job
 			randInt = rand.nextInt(availableJobs.size());
-			job = availableJobs.get(randInt); //job = problem.jobs.get(tmpA[tmpIdx++]);
+			job = availableJobs.get(randInt);
 			this.jobs.add(job);
 			scanTime = time;
 //System.out.println("Randomly Selected Job " + job.getNumber());
 			for (int machineNum = 0; machineNum < problem.getNumMachines(); machineNum++) {
-				
+			
 //System.out.print("\tM=" + machineNum + ",  ScanTime=" + scanTime );
 				if (this.assignments.get(machineNum).size() > 0) {
+					// scan time is either the stop time from the previous machine or the last stop time of the current machine
 					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
 //System.out.print(",  Added " + (this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime()) + " to scanTime =="+scanTime);
 				}
 				
-				processTime = problem.getProcessTimes()[job.getNumber()][machineNum];
+				processTime = job.getProcessTime(machineNum);
 //System.out.println(", ProcessTime=" + processTime);
 				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
 				scanTime += processTime;
@@ -75,13 +75,11 @@ public class Schedule {
 			availableJobs.remove(job);
 			incompleteJobs.remove(job);
 			
-			this.makespan = scanTime;
-			
 			time++;
 			if (incompleteJobs.size() == 0) break;
 		}
 		
-		//this.makespan = time;
+		this.makespan = scanTime;
 	}
 	
 	public void printAssignments() {
