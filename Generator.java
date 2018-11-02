@@ -20,14 +20,14 @@ public class Generator {
 		String dirName = "data";
 		
 		// Input Variables //
-		int minNumMachines = 3;
-		int maxNumMachines = 5;
-		int minNumJobs = 2;
-		int maxNumJobs = 5;
+		int minNumMachines = 4;
+		int maxNumMachines = 6;
+		int minNumJobs = 30;
+		int maxNumJobs = 80;
 		int minArrivalTime = 0;
-		int maxArrivalTime = 5;
-		int minProcessTime = 1;
-		int maxProcessTime = 4;
+		int maxArrivalTime = 10;
+		int minProcessTime = 2;
+		int maxProcessTime = 7;
 		
 		// Print number of machines
 		int numMachines = rand.nextInt(maxNumMachines - minNumMachines + 1) + minNumMachines;		
@@ -49,7 +49,7 @@ public class Generator {
 		System.out.println(output);
 		
 		try {
-			int maxFileNum = 0;
+			int maxFileNum = 0, fileNum;
 			
 			// Select File Name 
 			File dir = new File(dirName);
@@ -57,17 +57,16 @@ public class Generator {
 			File[] files = dir.listFiles();
 			
 			for (File file : files) {
-				if (!file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) continue;
+				if (!file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) continue;   // Ensure text file
 				
-				int fileNum;
 				try {
-					fileNum = Integer.parseInt(file.getName().substring(4, file.getName().indexOf(".txt")));
+					fileNum = Integer.parseInt(file.getName().substring(4, file.getName().indexOf("_")));
 					if (fileNum > maxFileNum) maxFileNum = fileNum; 
 				} catch (NumberFormatException e) {}
 			}
 			
 			// Write new file
-			String fileName = dirName + "/" + "file" + (maxFileNum + 1) + ".txt";
+			String fileName = dirName + "/" + "file" + (maxFileNum + 1) + "_M" + numMachines + "_J" + numJobs + ".txt";
 			File newFile = new File(fileName);
 	        if (!newFile.createNewFile()){
 	            System.out.println("File Already Exists!");
@@ -82,10 +81,6 @@ public class Generator {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-		
-		
-		
-
 	}
 
 }

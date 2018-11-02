@@ -7,23 +7,32 @@ import java.util.Random;
 public class Schedule {
 	
 	// Instance Variables
-	private Problem problem;
+	//private Problem problem;
+	private ArrayList<Job> jobs;
 	private ArrayList<ArrayList<Assignment>> assignments;
 	private int makespan;
 	
 	// Constructor
-	public Schedule(Problem problem) {
-		this.problem = problem;
+	public Schedule(int numMachines/*Problem problem*/) {
+		//this.problem = problem;
+		this.jobs = new ArrayList<Job>();
 		this.assignments = new ArrayList<ArrayList<Assignment>>();
-		for (int idx = 0; idx < problem.getNumMachines(); idx++) this.assignments.add(new ArrayList<Assignment>());
+		for (int idx = 0; idx < numMachines; idx++) this.assignments.add(new ArrayList<Assignment>());
 	}
 	
 	// Getters
+	public ArrayList<Job> getJobs() {
+		return this.jobs;
+	}
+	
+	public int getMakespan() {
+		return this.makespan;
+	}
 	
 	// Setters
 	
 	// Randomly shuffle problem set 
-	public void randomize() {
+	public void randomize(Problem problem) {
 		int time = 0, scanTime = 0, processTime;
 		int randInt;
 		Random rand = new Random();
@@ -46,7 +55,8 @@ public class Schedule {
 			
 			// Select random available job
 			randInt = rand.nextInt(availableJobs.size());
-			job = availableJobs.get(randInt); //job = problem.jobs.get(tmpA[tmpIdx++]); 
+			job = availableJobs.get(randInt); //job = problem.jobs.get(tmpA[tmpIdx++]);
+			this.jobs.add(job);
 			scanTime = time;
 //System.out.println("Randomly Selected Job " + job.getNumber());
 			for (int machineNum = 0; machineNum < problem.getNumMachines(); machineNum++) {
@@ -81,7 +91,7 @@ public class Schedule {
 		
 		output += "makespan " + this.makespan + "\n\t";
 		for (int idx = 0; idx < this.makespan; idx++) output += String.format("%-3d ", idx); output += "\n\t";
-		for (int idx = 0; idx < this.makespan; idx++) output += "---"; output += "\n";
+		for (int idx = 0; idx < this.makespan; idx++) output += "===="; output += "\n";
 		
 		for (ArrayList<Assignment> machineAssignments : this.assignments) {
 			time = 0;
@@ -89,18 +99,19 @@ public class Schedule {
 			
 			for (Assignment assignment : machineAssignments) {
 				while (time < assignment.getStartTime()) {
-					output += String.format("%-3s ", "_");
+					output += String.format("%-3s ", "-");
 					time++;
 				}
-				endTime = time + problem.getProcessTimes()[assignment.getJob().getNumber()][machineNum];
+				endTime = time + assignment.getProcessTime();
 				while (time < endTime) {
 					output += String.format("%-3c ", (char) (assignment.getJob().getNumber() + 65));
 					time++;
 				}
-				/*while (time < this.makespan) {
-					output += String.format("%-3s ", "_");
-					time++;
-				}*/
+			}
+			
+			while (time < this.makespan) {
+				output += String.format("%-3s ", "-");
+				time++;
 			}
 			
 			machineNum++;

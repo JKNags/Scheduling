@@ -13,15 +13,13 @@ public class Scheduler {
 	 * Creates minimum schedule
 	 */
 	
-	int numMachines;
-	
 	public static void main(String[] args) {
 		String dirName = "data";
 		File[] files = getFilesInFolder(dirName);
-		//int choice = 0;
-		//Scanner inputScanner = new Scanner(System.in);		
+		int choice = 0;
+		Scanner inputScanner = new Scanner(System.in);		
 		
-		//while (true) {			
+		while (true) {			
 			System.out.println("\n***********************************************");
 			System.out.println("Select file number. Enter 0 to Exit.");
 			printFiles(files);
@@ -30,41 +28,42 @@ public class Scheduler {
 			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
 			
 			// TODO: enable choice
-			//choice = inputScanner.nextInt();   // Get selection
+			choice = inputScanner.nextInt();   // Get selection
 			
-			//if (choice >= 1 && choice <= files.length) {
+			if (choice >= 1 && choice <= files.length) {
 				
 				long startTime = System.nanoTime();
 				
-				//if (choice >= 1 && choice <= files.length) {
-					//scheduleJobs(files[choice - 1]);
-					scheduleJobs(files[0]);
-				//}
+				if (choice >= 1 && choice <= files.length) {
+					scheduleJobs(files[choice - 1]);
+					scheduleJobs(files[5]);
+				}
 				
 				long stopTime = System.nanoTime();
 				System.out.println("Duration:  " + (stopTime - startTime));
 				
-			//} else if (choice == 0) break;
-		//}
+			} else if (choice == 0) break;
+		}
 
-		//inputScanner.close();
+		inputScanner.close();
 	}
 	
 	// Schedule jobs
 	private static void scheduleJobs(File file) {
 		Problem problem = getProblemDefinition(file);
 		ArrayList<Schedule> population = new ArrayList<Schedule>();
-		int populationSize = 1;
+		int populationSize = 10;
 		
 		System.out.println(problem);
 
 		// Create the initial population
 		for (int idx = 0; idx < populationSize; idx++) {
-			Schedule schedule = new Schedule(problem);
-			schedule.randomize();
+			Schedule schedule = new Schedule(problem.getNumMachines());
+			schedule.randomize(problem);
 			
 			population.add(schedule);
-			schedule.printAssignments();
+			//schedule.printAssignments();
+			System.out.println("makespan: " + schedule.getMakespan() + ", " + schedule.getJobs());
 		}
 		
 	}

@@ -39,7 +39,7 @@ public class Problem {
 	public String toString() {
 		String output = "\tA\t";
 
-		for (int i = 0; i < this.processTimes.length; i++) {
+		for (int i = 0; i < this.numMachines; i++) {
 			output += "M" + i + "\t";
 		}
 		output += "\n";
@@ -54,25 +54,6 @@ public class Problem {
 			}
 			output += "\n";
 		}
-		
-		
-		/*int time, target;
-		 * for (Job job : this.jobs) {
-			
-			time = 0;
-			while (time < job.getArrivalTime()) {
-				output += "_";
-				time++;
-			}
-			
-			target = time + job.getProcessTimes();
-			while (time < target) {
-				output += (char) (job.getNumber() + 65);
-				time++;
-			}
-			
-			output += "\n";
-		}*/
 		
 		return output;
 	}
