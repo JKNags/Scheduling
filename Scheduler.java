@@ -18,32 +18,36 @@ public class Scheduler {
 	public static void main(String[] args) {
 		String dirName = "data";
 		File[] files = getFilesInFolder(dirName);
-		int choice = 0;
-		Scanner inputScanner = new Scanner(System.in);		
+		//int choice = 0;
+		//Scanner inputScanner = new Scanner(System.in);		
 		
-		while (true) {			
+		//while (true) {			
 			System.out.println("\n***********************************************");
 			System.out.println("Select file number. Enter 0 to Exit.");
 			printFiles(files);
 			
+			// TODO: catch first line
 			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
-			choice = inputScanner.nextInt();   // Get selection
 			
-			if (choice >= 1 && choice <= files.length) {
+			// TODO: enable choice
+			//choice = inputScanner.nextInt();   // Get selection
+			
+			//if (choice >= 1 && choice <= files.length) {
 				
 				long startTime = System.nanoTime();
 				
-				if (choice >= 1 && choice <= files.length) {
-					scheduleJobs(files[choice - 1]);
-				}
+				//if (choice >= 1 && choice <= files.length) {
+					//scheduleJobs(files[choice - 1]);
+					scheduleJobs(files[0]);
+				//}
 				
 				long stopTime = System.nanoTime();
 				System.out.println("Duration:  " + (stopTime - startTime));
 				
-			} else if (choice == 0) break;
-		}
+			//} else if (choice == 0) break;
+		//}
 
-		inputScanner.close();
+		//inputScanner.close();
 	}
 	
 	// Schedule jobs

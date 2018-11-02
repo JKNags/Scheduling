@@ -23,14 +23,6 @@ public class Schedule {
 	// Setters
 	
 	// Randomly shuffle problem set 
-	// TODO: To randomly assign jobs in order, or to randomly assign each time unit?
-	
-	/**
-	 * 
-	 * 
-	 *  BROKEN!! just wanted to commit
-	 * 
-	 */
 	public void randomize() {
 		int time = 0, scanTime = 0, processTime;
 		int randInt;
@@ -44,6 +36,7 @@ public class Schedule {
 		
 		for (ArrayList<Assignment> a : this.assignments) a.clear();
 		
+		//int tmpIdx = 0;int[] tmpA = {1, 2, 0, 3, 4};
 		while (true) {
 			// Add any new jobs for current time
 			for (Job newJob : incompleteJobs) {
@@ -53,15 +46,19 @@ public class Schedule {
 			
 			// Select random available job
 			randInt = rand.nextInt(availableJobs.size());
-			job = availableJobs.get(randInt);
+			job = availableJobs.get(randInt); //job = problem.jobs.get(tmpA[tmpIdx++]); 
+			scanTime = time;
+//System.out.println("Randomly Selected Job " + job.getNumber());
 			for (int machineNum = 0; machineNum < problem.getNumMachines(); machineNum++) {
+				
+//System.out.print("\tM=" + machineNum + ",  ScanTime=" + scanTime );
 				if (this.assignments.get(machineNum).size() > 0) {
-					scanTime = this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime();
-				} else {
-					scanTime = time;
+					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
+//System.out.print(",  Added " + (this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime()) + " to scanTime =="+scanTime);
 				}
 				
 				processTime = problem.getProcessTimes()[job.getNumber()][machineNum];
+//System.out.println(", ProcessTime=" + processTime);
 				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
 				scanTime += processTime;
 			}
@@ -100,10 +97,10 @@ public class Schedule {
 					output += String.format("%-3c ", (char) (assignment.getJob().getNumber() + 65));
 					time++;
 				}
-				while (time < this.makespan) {
+				/*while (time < this.makespan) {
 					output += String.format("%-3s ", "_");
 					time++;
-				}
+				}*/
 			}
 			
 			machineNum++;
