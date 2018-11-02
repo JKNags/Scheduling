@@ -1,6 +1,5 @@
 package project6;
 
-import java.util.ArrayList;
 import java.util.Random;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -21,29 +20,30 @@ public class Generator {
 		String dirName = "data";
 		
 		// Input Variables //
+		int minNumMachines = 3;
+		int maxNumMachines = 5;
 		int minNumJobs = 2;
 		int maxNumJobs = 5;
-		int minTasks = 1;
-		int maxTasks = 3;
-		int minTime = 1;
-		int maxTime = 4;
+		int minArrivalTime = 0;
+		int maxArrivalTime = 5;
+		int minProcessTime = 1;
+		int maxProcessTime = 4;
 		
+		// Print number of machines
+		int numMachines = rand.nextInt(maxNumMachines - minNumMachines + 1) + minNumMachines;		
+		output += "MACHINES " + numMachines + "\n";
+		
+		// Print number of jobs
 		int numJobs = rand.nextInt(maxNumJobs - minNumJobs + 1) + minNumJobs;
+		output += "JOBS " + numJobs + "\n";
 		
-		for (int j = 0; j < numJobs; j++) {
-			output += "JOB " + j + "\n";
-			
-			int numTasks = rand.nextInt(maxTasks - minTasks + 1) + minTasks;
-			ArrayList<Integer> array = new ArrayList<Integer>(); 
-			for (int t = 0; t < numTasks; t++) { array.add(t); }
-			
-			for (int t = 0; t < numTasks; t++) {
-				int idx = rand.nextInt(numTasks - t);
-				int taskNum = array.get(idx);
-				array.remove(idx);
-				
-				output += taskNum++ + " " + (rand.nextInt(maxTime - minTime + 1) + minTime) + "\n";
+		// Print jobs
+		for (int j = 0; j < numJobs; j++) {				// JOB <number> <arrival time> {<process time for each machine>}
+			output += "JOB " + j + " " + (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime); 
+			for (int m = 0; m < numMachines; m++) {
+				output += " " + (rand.nextInt(maxProcessTime - minProcessTime + 1) + minProcessTime);
 			}
+			output += "\n";
 		}
 		
 		System.out.println(output);

@@ -13,6 +13,8 @@ public class Scheduler {
 	 * Creates minimum schedule
 	 */
 	
+	int numMachines;
+	
 	public static void main(String[] args) {
 		String dirName = "data";
 		File[] files = getFilesInFolder(dirName);
@@ -20,10 +22,11 @@ public class Scheduler {
 		Scanner inputScanner = new Scanner(System.in);		
 		
 		while (true) {			
-			System.out.println("***********************************************");
-			System.out.println("\nSelect file number. Enter 0 to Exit.");
+			System.out.println("\n***********************************************");
+			System.out.println("Select file number. Enter 0 to Exit.");
 			printFiles(files);
 			
+			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
 			choice = inputScanner.nextInt();   // Get selection
 			
 			if (choice >= 1 && choice <= files.length) {
@@ -45,57 +48,71 @@ public class Scheduler {
 	
 	// Schedule jobs
 	private static void scheduleJobs(File file) {
-		ArrayList<Job> jobs = getJobsFromFile(file);
-		ArrayList<Schedule> schedules = new ArrayList<Schedule>();
+		Problem problem = getProblemDefinition(file);
+		ArrayList<Schedule> population = new ArrayList<Schedule>();
 		int populationSize = 1;
 		
-		for (Job j : jobs) {
-			System.out.println(j);
-		}
-		
-		System.out.println("Num Machines: " + Job.getNumMachines());
-		
+		System.out.println(problem);
+
 		// Create the initial population
 		for (int idx = 0; idx < populationSize; idx++) {
-			Schedule schedule = new Schedule();
-			schedule.randomize(jobs);
+			Schedule schedule = new Schedule(problem);
+			schedule.randomize();
 			
-			schedules.add(schedule);
+			population.add(schedule);
+			schedule.printAssignments();
 		}
 		
 	}
 	
 	// Return a list of jobs from file
-	public static ArrayList<Job> getJobsFromFile(File file) {
+	public static Problem getProblemDefinition(File file) {
 		Scanner scanner = null;
 		ArrayList<Job> jobs = new ArrayList<Job>(); 
-		Job job = null;
 		String[] lineSplit;
-		
-		Job.resetNumMachines();
-		
+		int numMachines = 0, numJobs = 0, jobNumber, arrivalTime;
+		int[][] processTimes = null;
+
 		try {
 			scanner = new Scanner(file);
 			
-			while (scanner.hasNext()) {
+			// Get number of machines
+			if (scanner.hasNext()) {
 				lineSplit = scanner.nextLine().split(" ");
 				if (lineSplit.length != 2) 
-					throw new RuntimeException("\nError parsing file - line does not have exactly two elements");
-				
-				if (lineSplit[0].equals("JOB")) {   // Found new job
-					job = new Job(Integer.parseInt(lineSplit[1]));
-					jobs.add(job);
-				} else {   // Found task for above job
-					job.addTask(Integer.parseInt(lineSplit[0]), Integer.parseInt(lineSplit[1]));
-				}
+					throw new RuntimeException("\nError parsing file - Machine line does not have exactly two elements");
+				numMachines = Integer.parseInt(lineSplit[1]);
 			}
-		} catch (FileNotFoundException e) {
+			
+			// Get number of jobs
+			if (scanner.hasNext()) {
+				lineSplit = scanner.nextLine().split(" ");
+				if (lineSplit.length != 2) 
+					throw new RuntimeException("\nError parsing file - Jobs line does not have exactly two elements");
+				numJobs = Integer.parseInt(lineSplit[1]);
+			}
+			
+			processTimes = new int[numJobs][numMachines];
+			
+			// Get jobs
+			while (scanner.hasNext()) {
+				lineSplit = scanner.nextLine().split(" ");
+				if (lineSplit.length != (3 + numMachines)) 
+					throw new RuntimeException("\nError parsing file - Job line does not have 2 + numMachines elements");
+				jobNumber = Integer.parseInt(lineSplit[1]);
+				arrivalTime = Integer.parseInt(lineSplit[2]);
+				for (int mIdx = 0; mIdx < numMachines; mIdx++) {
+					processTimes[jobNumber][mIdx] = Integer.parseInt(lineSplit[mIdx + 3]);
+				}
+				jobs.add(new Job(jobNumber, arrivalTime));
+			}
+		} catch (FileNotFoundException | NumberFormatException e) {
 			e.printStackTrace();
 		} finally {
 			scanner.close();
 		}
 		
-		return jobs;
+		return new Problem(numMachines, jobs, processTimes);
 	}
 	
 	// Return all text files in folder
