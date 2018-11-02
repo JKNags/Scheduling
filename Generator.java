@@ -1,5 +1,6 @@
 package project6;
 
+import java.util.Arrays;
 import java.util.Random;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -16,16 +17,17 @@ public class Generator {
 
 	public static void main(String[] args) {
 		Random rand = new Random();
+		int[] arrivalTimes; 
 		String output = "";
 		String dirName = "data";
 		
 		// Input Variables //
 		int minNumMachines = 3;
 		int maxNumMachines = 6;
-		int minNumJobs = 60;
-		int maxNumJobs = 90;
+		int minNumJobs = 5;
+		int maxNumJobs = 20;
 		int minArrivalTime = 0;
-		int maxArrivalTime = 6;
+		int maxArrivalTime = 5;
 		int minProcessTime = 1;
 		int maxProcessTime = 8;
 		
@@ -36,9 +38,17 @@ public class Generator {
 		// Print number of jobs
 		int numJobs = rand.nextInt(maxNumJobs - minNumJobs + 1) + minNumJobs;
 		
+		// Get job arrival times and sort them
+		arrivalTimes = new int[numJobs];
+		for (int idx = 0; idx < numJobs; idx++) {
+			arrivalTimes[idx] = (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime);
+		}
+		Arrays.sort(arrivalTimes);
+		
 		// Print jobs
 		for (int j = 0; j < numJobs; j++) {				// JOB <number> <arrival time> {<process time for each machine>}
-			output += "JOB " + j + " " + (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime); 
+			//output += "JOB " + j + " " + (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime);
+			output += "JOB " + j + " " + arrivalTimes[j];
 			for (int m = 0; m < numMachines; m++) {
 				output += " " + (rand.nextInt(maxProcessTime - minProcessTime + 1) + minProcessTime);
 			}

@@ -119,5 +119,10 @@ public class Schedule {
 		System.out.println("Schedule");
 		System.out.println(output);
 	}
+	
+	// To String
+	public String toString() {
+		return this.jobs.toString();
+	}
 
 }
