@@ -1,15 +1,11 @@
 # Scheduling
-Job Scheduling
+Flow Shop Scheduling
 
-Implementing the NP-Complete Job Scheduling Problem using Genetic Algorithms and Wisdom of Crowds
+Implementing the NP-Hard Flow Shop Scheduling Problem using Genetic Algorithms and Wisdom of Crowds
 
 Resources:
-https://en.wikipedia.org/wiki/Job_shop_scheduling
-https://developers.google.com/optimization/scheduling/job_shop
-https://courses.washington.edu/ie337/Job%20Shop%20Scheduling.pdf
+https://en.wikipedia.org/wiki/Flow_shop_scheduling
+https://www.omicsonline.org/open-access/the-permutation-flowshop-scheduling-using-a-genetic-algorithmbasediterative-method-2169-0316-1000191.php?aid=76264
+https://www.hindawi.com/journals/ddns/2015/320140/
 
 Implementation:
-
-1)  Read data from a file. There are n jobs and m machines. Each job consists of a sequence of tasks. A task is a machine the job must run on and the time it takes to complete. 
-
-2)  GA?

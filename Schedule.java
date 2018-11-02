@@ -110,11 +110,5 @@ public class Schedule {
 		System.out.println("Schedule");
 		System.out.println(output);
 	}
-	
-	public void add(int machineNum, Task task, int startTime) {
-		System.out.println("Adding task: J" + task.getJob().getNumber() + " " + task + " to machine " + machineNum + " at T=" + startTime);
-		
-
-	}
 
 }
