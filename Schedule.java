@@ -7,17 +7,22 @@ import java.util.Random;
 public class Schedule {
 	
 	// Instance Variables
-	//private Problem problem;
 	private ArrayList<Job> jobs;
 	private ArrayList<ArrayList<Assignment>> assignments;
 	private int makespan;
 	
-	// Constructor
-	public Schedule(int numMachines/*Problem problem*/) {
-		//this.problem = problem;
+	// Constructors
+	public Schedule(int numMachines) {
 		this.jobs = new ArrayList<Job>();
 		this.assignments = new ArrayList<ArrayList<Assignment>>();
 		for (int idx = 0; idx < numMachines; idx++) this.assignments.add(new ArrayList<Assignment>());
+	}
+	
+	public Schedule(ArrayList<Job> jobs, int numMachines) {
+		this.jobs = jobs;
+		this.assignments = new ArrayList<ArrayList<Assignment>>();
+		for (int idx = 0; idx < numMachines; idx++) this.assignments.add(new ArrayList<Assignment>());
+		createAssignments(numMachines);
 	}
 	
 	// Getters
@@ -25,11 +30,51 @@ public class Schedule {
 		return this.jobs;
 	}
 	
+	public Job getJob(int idx) {
+		if (this.jobs.size() == 0 || idx < 0 || idx > this.jobs.size()) return null;
+		return this.jobs.get(idx);
+	}
+	
+	public int getNumJobs() {
+		return this.jobs.size();
+	}
+	
 	public int getMakespan() {
 		return this.makespan;
 	}
 	
 	// Setters
+	
+	// Create assignments for current jobs
+	private void createAssignments(int numMachines) {
+		int time = 0, scanTime = 0, processTime;
+		int[] numAssignments = new int[this.jobs.size()];
+		Arrays.fill(numAssignments, 0);
+		
+		for (Job job : this.jobs) {
+			
+			scanTime = time;
+//System.out.println("Randomly Selected Job " + job.getNumber());
+			for (int machineNum = 0; machineNum < numMachines; machineNum++) {
+			
+//System.out.print("\tM=" + machineNum + ",  ScanTime=" + scanTime );
+				if (this.assignments.get(machineNum).size() > 0) {
+					// scan time is either the stop time from the previous machine or the last stop time of the current machine
+					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
+//System.out.print(",  Added " + (this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime()) + " to scanTime =="+scanTime);
+				}
+				
+				processTime = job.getProcessTime(machineNum);
+//System.out.println(", ProcessTime=" + processTime);
+				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
+				scanTime += processTime;
+			}
+			
+			time++;
+		}
+		
+		this.makespan = scanTime;
+	}
 	
 	// Randomly shuffle problem set 
 	public void randomize(Problem problem) {
@@ -43,6 +88,7 @@ public class Schedule {
 		ArrayList<Job> incompleteJobs = (ArrayList<Job>) problem.getJobs().clone();
 		ArrayList<Job> availableJobs = new ArrayList<Job>();
 		
+		this.jobs.clear();
 		for (ArrayList<Assignment> a : this.assignments) a.clear();
 		
 		while (true) {

@@ -37,7 +37,8 @@ public class Scheduler {
 				long startTime = System.nanoTime();
 				
 				if (choice >= 1 && choice <= files.length) {
-					scheduleJobs(files[choice - 1], 10, 1, 0.1);
+					// File, populationSize, numGenerations, mutationRate
+					scheduleJobs(files[choice - 1], 10, 100, 0.1);
 				}
 				
 				long stopTime = System.nanoTime();
@@ -57,9 +58,12 @@ public class Scheduler {
 		double roll;
 		double[] rouletteWheel;
 		Random rand = new Random();
-		Schedule child;
 		ArrayList<Schedule> population = new ArrayList<Schedule>();
 		ArrayList<Schedule> nextGenPopulation = new ArrayList<Schedule>(populationSize);
+		
+		if (populationSize % 2 == 1) throw new RuntimeException("\nPopulation Size must be even");
+		
+		int totalMakespan;
 		
 		// Print problem and initial populations
 		System.out.println(problem);
@@ -72,19 +76,27 @@ public class Scheduler {
 			population.add(schedule);
 		}
 		
+		nextGenPopulation = population;
+		
 		// Run Genetic Algorithm
 		for (int genIdx = 0; genIdx < numGenerations; genIdx++) {
+			System.out.println("## Generation " + genIdx + " ###");
 			
 			// Fill wheel
 			rouletteWheel = getRouletteWheel(population, numElite);
 
+System.out.println("Best: " + population.get(0).getMakespan());
+totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
+System.out.println("  avg: " + ((float)totalMakespan / populationSize));
+System.out.println("  wheel: " + Arrays.toString(rouletteWheel));
+			
 			//Add elite individuals
 			for (int idx = 0; idx < numElite; idx++) {
 				nextGenPopulation.set(idx, population.get(idx));
 			}
 			
 			// Create new generation using crossover and mutation
-			for (int childIdx = numElite; childIdx < populationSize; childIdx++) {
+			for (int childIdx = numElite; childIdx < populationSize / 2; childIdx++) {
 				parent1Idx = parent2Idx = 0;
 				
 				// Choose first parent
@@ -104,7 +116,7 @@ public class Scheduler {
 					parent2Idx = (parent2Idx >= populationSize - 1) ? 0 : parent2Idx + 1;
 
 				// Cross parents into new child
-				crossover(nextGenPopulation, childIdx, population.get(parent1Idx), population.get(parent2Idx), mutationRate);
+				crossoverSBOX(nextGenPopulation, childIdx, population.get(parent1Idx), population.get(parent2Idx), mutationRate, problem.getNumMachines());
 			}
 			
 			population = nextGenPopulation;   // Replace old generation with new
@@ -117,18 +129,105 @@ public class Scheduler {
 					return 0;
 				}
 			});	
-			
-			System.out.println("## Generation " + genIdx + " ###");
-			for (Schedule s : population) System.out.println("  makespan: " + s.getMakespan() + ", " + s);
-			
-			System.out.println("  wheel: " + Arrays.toString(rouletteWheel));
 		}
-			
+		
+		System.out.println("Best: " + population.get(0).getMakespan());
+		totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
+		System.out.println("  avg: " + ((float)totalMakespan / populationSize));
 	}
 	
 	// Crossover both parents and add offspring to population
-	public static void crossover(ArrayList<Schedule> population, int index, Schedule parent1, Schedule parent2, double mutationRate) {
-		//TODO: not static, work on
+	// SBOX - blocks of at least two jobs are auto carried over to children, remaining slots are added from corresponding parent
+	//			until a stop point is met, then rest is filled from opposite parent
+	public static void crossoverSBOX(ArrayList<Schedule> population, int index, Schedule parent1, Schedule parent2, double mutationRate, int numMachines) {
+		Random rand = new Random();
+		int parent1Idx = 0, parent2Idx = 0;
+		int cutIdx = rand.nextInt(parent1.getNumJobs() - 2) + 2;
+		boolean previousMatch = false;
+		boolean firstMatch = false;
+		ArrayList<Job> child1Jobs = new ArrayList<Job>();
+		ArrayList<Job> child2Jobs = new ArrayList<Job>();
+		Schedule child1, child2;
+		
+		// Initialize children
+		for (int idx = 0; idx < parent1.getNumJobs(); idx++) {
+			child1Jobs.add(null);
+			child2Jobs.add(null);
+		}
+		
+//System.out.println("P1 (" + parent1.getNumJobs() + "): " + parent1);
+//System.out.println("P2 (" + parent2.getNumJobs() + "): " + parent2);
+//System.out.print("setting child index: ");
+
+		// Set matching pairs from the parent in the children
+		for (int idx = 0; idx < parent1.getNumJobs(); idx++) {
+			// Jobs at this index don't match
+			if (!parent1.getJob(idx).equals(parent2.getJob(idx))) {
+				previousMatch = firstMatch = false;
+				continue;
+			}
+			
+			// Jobs match
+			if (previousMatch) {
+				if (firstMatch) {
+					child1Jobs.set(idx - 1, parent1.getJob(idx - 1));
+					child2Jobs.set(idx - 1, parent2.getJob(idx - 1));
+					firstMatch = false;
+//System.out.print(idx - 1 + ", ");
+				}
+				
+				child1Jobs.set(idx, parent1.getJob(idx));
+				child2Jobs.set(idx, parent2.getJob(idx));
+//System.out.print(idx + ", ");
+			} else {
+				previousMatch = true;
+				firstMatch = true;
+			}
+		}
+		
+/*System.out.print("   Cut Idx = " + cutIdx);
+System.out.print("\nC1 (" + child1Jobs.size() + "): [");
+for (int idx = 0; idx < child1Jobs.size(); idx++) {
+	System.out.print(child1Jobs.get(idx) == null ? "~~, " : (child1Jobs.get(idx) + ", "));
+}
+System.out.print("\nC2 (" + child2Jobs.size() + "): [");
+for (int idx = 0; idx < child2Jobs.size(); idx++) {
+	System.out.print(child2Jobs.get(idx) == null ? "~~, " : (child2Jobs.get(idx) + ", "));
+} System.out.print("\n");*/
+
+		// Set jobs from corresponding parent until cut index
+		for (int idx = 0; idx < cutIdx; idx++) {
+			if (child1Jobs.get(idx) == null) child1Jobs.set(idx, parent1.getJob(idx));
+			if (child2Jobs.get(idx) == null) child2Jobs.set(idx, parent2.getJob(idx));
+		}
+		
+		// Set remaining jobs from other parent
+		for (int idx = cutIdx; idx < parent1.getNumJobs(); idx++) {
+			if (child1Jobs.get(idx) == null) {
+				while ( child1Jobs.contains(parent2.getJob(parent2Idx)) ) parent2Idx++;
+				child1Jobs.set(idx, parent2.getJob(parent2Idx));
+				parent2Idx++;
+			}
+			if (child2Jobs.get(idx) == null) {
+				while ( child2Jobs.contains(parent1.getJob(parent1Idx)) ) parent1Idx++;
+				child2Jobs.set(idx, parent1.getJob(parent1Idx));
+				parent1Idx++;
+			}
+		}
+/*System.out.print("C1 (" + child1Jobs.size() + "): [");
+for (int idx = 0; idx < child1Jobs.size(); idx++) {
+	System.out.print(child1Jobs.get(idx) == null ? "~~, " : (child1Jobs.get(idx) + ", "));
+}
+System.out.print("\nC2 (" + child2Jobs.size() + "): [");
+for (int idx = 0; idx < child2Jobs.size(); idx++) {
+	System.out.print(child2Jobs.get(idx) == null ? "~~, " : (child2Jobs.get(idx) + ", "));
+} System.out.print("\n");*/
+
+		child1 = new Schedule(child1Jobs, numMachines);
+		child2 = new Schedule(child2Jobs, numMachines);
+
+		population.set((index * 2), child1);
+		population.set((index * 2) + 1, child2);
 	}
 	
 	// Return weighted list, preferring the lowest time
