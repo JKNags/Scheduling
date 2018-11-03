@@ -38,7 +38,7 @@ public class Scheduler {
 				
 				if (choice >= 1 && choice <= files.length) {
 					// File, populationSize, numGenerations, mutationRate
-					scheduleJobs(files[choice - 1], 10, 100, 0.1);
+					scheduleJobs(files[choice - 1], 100, 500, 0.05);
 				}
 				
 				long stopTime = System.nanoTime();
@@ -71,8 +71,7 @@ public class Scheduler {
 		
 		// Create the initial population
 		for (int idx = 0; idx < populationSize; idx++) {
-			Schedule schedule = new Schedule(problem.getNumMachines());
-			schedule.randomize(problem);
+			Schedule schedule = new Schedule(problem);   // Automatically randomizes
 			population.add(schedule);
 		}
 		
@@ -80,15 +79,17 @@ public class Scheduler {
 		
 		// Run Genetic Algorithm
 		for (int genIdx = 0; genIdx < numGenerations; genIdx++) {
-			System.out.println("## Generation " + genIdx + " ###");
+			//System.out.println("## Generation " + genIdx + " ###");
 			
 			// Fill wheel
 			rouletteWheel = getRouletteWheel(population, numElite);
 
-System.out.println("Best: " + population.get(0).getMakespan());
-totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
-System.out.println("  avg: " + ((float)totalMakespan / populationSize));
-System.out.println("  wheel: " + Arrays.toString(rouletteWheel));
+			if (genIdx == 1 || genIdx % 10 == 0) {
+				System.out.print("G=1 Best: " + population.get(0).getMakespan());
+				totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
+				System.out.println(",  avg: " + ((float)totalMakespan / populationSize));
+				//System.out.println("  wheel: " + Arrays.toString(rouletteWheel));	
+			}
 			
 			//Add elite individuals
 			for (int idx = 0; idx < numElite; idx++) {
@@ -131,7 +132,8 @@ System.out.println("  wheel: " + Arrays.toString(rouletteWheel));
 			});	
 		}
 		
-		System.out.println("Best: " + population.get(0).getMakespan());
+		System.out.println("Best: " + population.get(0).getMakespan() + "  " + population.get(0));
+		population.get(0).printAssignments();
 		totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
 		System.out.println("  avg: " + ((float)totalMakespan / populationSize));
 	}
@@ -142,9 +144,12 @@ System.out.println("  wheel: " + Arrays.toString(rouletteWheel));
 	public static void crossoverSBOX(ArrayList<Schedule> population, int index, Schedule parent1, Schedule parent2, double mutationRate, int numMachines) {
 		Random rand = new Random();
 		int parent1Idx = 0, parent2Idx = 0;
+		int swapIdx;
 		int cutIdx = rand.nextInt(parent1.getNumJobs() - 2) + 2;
+		double mutate;
 		boolean previousMatch = false;
 		boolean firstMatch = false;
+		Job tempJob;
 		ArrayList<Job> child1Jobs = new ArrayList<Job>();
 		ArrayList<Job> child2Jobs = new ArrayList<Job>();
 		Schedule child1, child2;
@@ -223,9 +228,31 @@ for (int idx = 0; idx < child2Jobs.size(); idx++) {
 	System.out.print(child2Jobs.get(idx) == null ? "~~, " : (child2Jobs.get(idx) + ", "));
 } System.out.print("\n");*/
 
+		// Mutate children by swapping jobs
+		for (int idx = 0; idx < child1Jobs.size(); idx++) {
+			mutate = rand.nextDouble();
+			if (mutate < mutationRate) { 
+				swapIdx = rand.nextInt(child1Jobs.size() - 2) + 1;
+				tempJob = child1Jobs.get(swapIdx);
+				child1Jobs.set(swapIdx, child1Jobs.get(idx));
+				child1Jobs.set(idx, tempJob);
+			}
+		}
+		for (int idx = 0; idx < child1Jobs.size(); idx++) {
+			mutate = rand.nextDouble();
+			if (mutate < mutationRate) { 
+				swapIdx = rand.nextInt(child2Jobs.size() - 2) + 1;
+				tempJob = child2Jobs.get(swapIdx);
+				child2Jobs.set(swapIdx, child2Jobs.get(idx));
+				child2Jobs.set(idx, tempJob);
+			}
+		}
+		
+		// Create schedules from job list
 		child1 = new Schedule(child1Jobs, numMachines);
 		child2 = new Schedule(child2Jobs, numMachines);
-
+		
+		// Set population
 		population.set((index * 2), child1);
 		population.set((index * 2) + 1, child2);
 	}

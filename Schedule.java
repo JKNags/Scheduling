@@ -12,10 +12,11 @@ public class Schedule {
 	private int makespan;
 	
 	// Constructors
-	public Schedule(int numMachines) {
+	public Schedule(Problem problem) {
 		this.jobs = new ArrayList<Job>();
 		this.assignments = new ArrayList<ArrayList<Assignment>>();
-		for (int idx = 0; idx < numMachines; idx++) this.assignments.add(new ArrayList<Assignment>());
+		for (int idx = 0; idx < problem.getNumMachines(); idx++) this.assignments.add(new ArrayList<Assignment>());
+		randomize(problem);
 	}
 	
 	public Schedule(ArrayList<Job> jobs, int numMachines) {
@@ -47,37 +48,31 @@ public class Schedule {
 	
 	// Create assignments for current jobs
 	private void createAssignments(int numMachines) {
-		int time = 0, scanTime = 0, processTime;
+		int scanTime = 0, processTime;
 		int[] numAssignments = new int[this.jobs.size()];
 		Arrays.fill(numAssignments, 0);
 		
 		for (Job job : this.jobs) {
+			if (scanTime < job.getArrivalTime()) scanTime = job.getArrivalTime();
 			
-			scanTime = time;
-//System.out.println("Randomly Selected Job " + job.getNumber());
 			for (int machineNum = 0; machineNum < numMachines; machineNum++) {
 			
-//System.out.print("\tM=" + machineNum + ",  ScanTime=" + scanTime );
 				if (this.assignments.get(machineNum).size() > 0) {
 					// scan time is either the stop time from the previous machine or the last stop time of the current machine
 					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
-//System.out.print(",  Added " + (this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime()) + " to scanTime =="+scanTime);
 				}
 				
 				processTime = job.getProcessTime(machineNum);
-//System.out.println(", ProcessTime=" + processTime);
 				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
 				scanTime += processTime;
 			}
-			
-			time++;
 		}
 		
 		this.makespan = scanTime;
 	}
 	
 	// Randomly shuffle problem set 
-	public void randomize(Problem problem) {
+	private void randomize(Problem problem) {
 		int time = 0, scanTime = 0, processTime;
 		int randInt;
 		Random rand = new Random();
@@ -132,10 +127,11 @@ public class Schedule {
 		String output = "";
 		int machineNum = 0;
 		int time, endTime;
+		int padding = Integer.toString(Math.max(this.makespan, 10 + this.jobs.size())).length() + 2;
 		
 		output += "makespan " + this.makespan + "\n\t";
-		for (int idx = 0; idx < this.makespan; idx++) output += String.format("%-3d ", idx); output += "\n\t";
-		for (int idx = 0; idx < this.makespan; idx++) output += "===="; output += "\n";
+		for (int i = 0; i < this.makespan; i++) output += String.format("%-" + padding + "d", i); output += "\n\t";
+		for (int i = 0; i < this.makespan; i++) for (int j = 0; j < padding; j++) output += "="; output += "\n";
 		
 		for (ArrayList<Assignment> machineAssignments : this.assignments) {
 			time = 0;
@@ -143,18 +139,18 @@ public class Schedule {
 			
 			for (Assignment assignment : machineAssignments) {
 				while (time < assignment.getStartTime()) {
-					output += String.format("%-3s ", "-");
+					output += String.format("%-" + padding + "s", "-");
 					time++;
 				}
 				endTime = time + assignment.getProcessTime();
 				while (time < endTime) {
-					output += String.format("%-3c ", (char) (assignment.getJob().getNumber() + 65));
+					output += String.format("%-" + padding + "s", "J" + assignment.getJob().getNumber());
 					time++;
 				}
 			}
 			
 			while (time < this.makespan) {
-				output += String.format("%-3s ", "-");
+				output += String.format("%-" + padding + "s", "-");
 				time++;
 			}
 			
