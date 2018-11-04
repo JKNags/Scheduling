@@ -46,29 +46,27 @@ public class Schedule {
 	
 	// Setters
 	
-	// Create assignments for current jobs
+	// Create assignments for current job order
 	private void createAssignments(int numMachines) {
-		int scanTime = 0, processTime;
-		int[] numAssignments = new int[this.jobs.size()];
-		Arrays.fill(numAssignments, 0);
+		int time = 0, processTime;
 		
 		for (Job job : this.jobs) {
-			if (scanTime < job.getArrivalTime()) scanTime = job.getArrivalTime();
+			time = job.getArrivalTime();
 			
 			for (int machineNum = 0; machineNum < numMachines; machineNum++) {
 			
 				if (this.assignments.get(machineNum).size() > 0) {
-					// scan time is either the stop time from the previous machine or the last stop time of the current machine
-					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
+					// scan time is either this jobs arrival time or the stop time of the last job on this machine
+					time = Math.max(time, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
 				}
 				
 				processTime = job.getProcessTime(machineNum);
-				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
-				scanTime += processTime;
+				this.assignments.get(machineNum).add(new Assignment(job, time, processTime));
+				time += processTime;
 			}
 		}
 		
-		this.makespan = scanTime;
+		this.makespan = time;
 	}
 	
 	// Randomly shuffle problem set 
@@ -76,8 +74,6 @@ public class Schedule {
 		int time = 0, scanTime = 0, processTime;
 		int randInt;
 		Random rand = new Random();
-		int[] numAssignments = new int[problem.getNumJobs()];
-		Arrays.fill(numAssignments, 0);
 		Job job = null;
 		@SuppressWarnings("unchecked")   //TODO what??
 		ArrayList<Job> incompleteJobs = (ArrayList<Job>) problem.getJobs().clone();
@@ -86,7 +82,7 @@ public class Schedule {
 		this.jobs.clear();
 		for (ArrayList<Assignment> a : this.assignments) a.clear();
 		
-		while (true) {
+		do {
 			// Add any new jobs for current time
 			for (Job newJob : incompleteJobs) {
 				if (newJob.getArrivalTime() == time) availableJobs.add(newJob);
@@ -98,18 +94,16 @@ public class Schedule {
 			job = availableJobs.get(randInt);
 			this.jobs.add(job);
 			scanTime = time;
-//System.out.println("Randomly Selected Job " + job.getNumber());
+			
+			// Set jobs for each machine
 			for (int machineNum = 0; machineNum < problem.getNumMachines(); machineNum++) {
 			
-//System.out.print("\tM=" + machineNum + ",  ScanTime=" + scanTime );
 				if (this.assignments.get(machineNum).size() > 0) {
 					// scan time is either the stop time from the previous machine or the last stop time of the current machine
 					scanTime = Math.max(scanTime, this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime());
-//System.out.print(",  Added " + (this.assignments.get(machineNum).get(this.assignments.get(machineNum).size() - 1).getStopTime()) + " to scanTime =="+scanTime);
 				}
 				
 				processTime = job.getProcessTime(machineNum);
-//System.out.println(", ProcessTime=" + processTime);
 				this.assignments.get(machineNum).add(new Assignment(job, scanTime, processTime));
 				scanTime += processTime;
 			}
@@ -117,8 +111,7 @@ public class Schedule {
 			incompleteJobs.remove(job);
 			
 			time++;
-			if (incompleteJobs.size() == 0) break;
-		}
+		} while (incompleteJobs.size() != 0);
 		
 		this.makespan = scanTime;
 	}
