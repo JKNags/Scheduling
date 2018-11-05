@@ -30,21 +30,24 @@ public class Scheduler {
 			// TODO: catch first line
 			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
 			
-			choice = inputScanner.nextInt();   // Get selection
-			
-			if (choice >= 1 && choice <= files.length) {
-				
-				long startTime = System.nanoTime();
+			try {
+				choice = Integer.parseInt(inputScanner.nextLine());   // Get selection
 				
 				if (choice >= 1 && choice <= files.length) {
-					// File, populationSize, numGenerations, mutationRate
-					scheduleJobs(files[choice - 1], 100, 200, 0.01);
-				}
-				
-				long stopTime = System.nanoTime();
-				System.out.println("Duration:  " + (stopTime - startTime));
-				
-			} else if (choice == 0) break;
+					
+					long startTime = System.nanoTime();
+					
+					if (choice >= 1 && choice <= files.length) {
+						// File, populationSize, numGenerations, mutationRate
+						scheduleJobs(files[choice - 1], 50, 500, 0.01);
+					}
+					
+					long stopTime = System.nanoTime();
+					System.out.println("Duration:  " + (stopTime - startTime));
+					
+				} else if (choice == 0) break;	
+			} catch (NumberFormatException e) {}
+			
 		}
 
 		inputScanner.close();
@@ -68,13 +71,18 @@ public class Scheduler {
 		
 		// Print problem and initial populations
 		//System.out.println(problem);
-		System.out.println("Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite);
+		System.out.println("Population: " + populationSize + ", Generations: " + numGenerations 
+				+ ", Elite: " + numElite + ", Mutation: " + mutationRate + " %");
 		
 		// Create the initial population
 		for (int idx = 0; idx < populationSize; idx++) {
 			Schedule schedule = new Schedule(problem);   // Automatically randomizes
 			population.add(schedule);
 		}
+		
+Collections.sort(population, new Comparator<Schedule>() {public int compare(Schedule s1, Schedule s2) {if (s1.getMakespan() > s2.getMakespan()) return 1; if (s1.getMakespan() < s2.getMakespan()) return -1;return 0;}});	
+totalMakespan = 0; for (Schedule s : population) {totalMakespan += s.getMakespan();}
+System.out.println("Initial Best: " + population.get(0).getMakespan() + ",  avg: " + ((float)totalMakespan / populationSize));
 		
 		nextGenPopulation = population;
 		
@@ -137,7 +145,7 @@ public class Scheduler {
 		
 		System.out.println("Best: " + population.get(0).getMakespan() + "  " + population.get(0));
 		population.get(0).printAssignments();
-		totalMakespan = 0; for (Schedule s : population) {/*System.out.println("  makespan: " + s.getMakespan() + ", " + s);*/ totalMakespan += s.getMakespan();}
+		totalMakespan = 0; for (Schedule s : population) {totalMakespan += s.getMakespan();}
 		System.out.println("  avg: " + ((float)totalMakespan / populationSize));
 	}
 	
