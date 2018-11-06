@@ -6,6 +6,7 @@ public class Job {
 	private int number;
 	private int arrivalTime;
 	private int[] processTimes;
+	private int frequencyAfter;
 	
 	// Constructor
 	public Job(int number, int arrivalTime, int[] processTimes) {
@@ -31,7 +32,14 @@ public class Job {
 		return this.processTimes[machineNum];
 	}
 	
+	public int getFrequencyAfter() {
+		return this.frequencyAfter;
+	}
+	
 	// Setters
+	public void setFrequencyAfter(int frequency) {
+		this.frequencyAfter = frequency;
+	}
 
 	// To String
 	public String toString() {

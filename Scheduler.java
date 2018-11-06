@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.stream.IntStream;
 
 public class Scheduler {
 	/*
@@ -40,7 +41,7 @@ public class Scheduler {
 					if (choice >= 1 && choice <= files.length) {
 						// File, populationSize, numGenerations, mutationRate
 						//scheduleJobs(files[choice - 1], 50, 500, 0.01);
-						scheduleWOC(files[choice - 1], 50, 500, 0.01);
+						scheduleWOC(files[choice - 1], 50, 500, 0.05);
 					}
 					
 					long stopTime = System.nanoTime();
@@ -57,151 +58,76 @@ public class Scheduler {
 	private static void scheduleWOC(File file, int populationSize, int numGenerations, double mutationRate) {
 		Problem problem = getProblemFromFile(file);
 		int numAdded, popIdx;   // Counter for number of individuals added, and an index for adding individuals
-		int numGARuns = 10, topNumIndividuals = 3;   // Number of GA's run and top number selected
+		int numGARuns = 15, topNumIndividuals = 1;   // Number of GA's run and top number selected
 		int crowdSize = numGARuns * topNumIndividuals;
-		int maxRowIdx, maxColIdx, maxIdx, cityNum;
 		int numElite = Math.max(1, (int) (populationSize * 0.1));
-		int[][] edgeCounterMatrix = new int[problem.getNumJobs()][problem.getNumJobs()];   // Upper triangular matrix counting occurrences of job pairs
-		double totalMakespan = 0, shortestMakespan = 1000000, longestMakespan = -1;   // Statistics
-		Job job, nextJob = null;
-		Schedule shortestSchedule = null, longestSchedule = null;
-		Schedule aggregateSchedule;
-		ArrayList<Job> aggregateJobs = new ArrayList<Job>();
+		int[][] orderingCounterMatrix = new int[problem.getNumJobs()][problem.getNumJobs()];   // Matrix to count relative ordering of jobs
+		Schedule schedule;
 		ArrayList<Schedule> population;
-		ArrayList<Schedule> crowd = new ArrayList<Schedule>();	
+		ArrayList<Schedule> crowd = new ArrayList<Schedule>();
 			
 		// Initialize path edges to 0
-		for (int[] row : edgeCounterMatrix) Arrays.fill(row, 0);
+		for (int[] row : orderingCounterMatrix) Arrays.fill(row, 0);
 		
 		// Print problem and initial populations
 		//System.out.println(problem);
 		System.out.println("Population: " + populationSize + ", Generations: " + numGenerations 
 				+ ", Elite: " + numElite + ", Mutation: " + mutationRate + " %, Crowd: " + numGARuns + "x" + topNumIndividuals);
-		
-		// Create crowd of topNumIndividuals out of numRuns
-		/*for (int idx = 0; idx < numGARuns; idx++) {
-			numAdded = 1;   // 1 for index 0 that is always added
-			popIdx = 1;
-			
-			population = scheduleJobsGA(problem, populationSize, numGenerations, mutationRate);
 
-			crowd.add(population.get(0));   // Add best individual of population
-			totalMakespan += population.get(0).getMakespan();               //
-			if (population.get(0).getMakespan() < shortestMakespan) {       // 
-				shortestMakespan = population.get(0).getMakespan();         //  
-				shortestSchedule = population.get(0);  						// Crowd
-			} else if (population.get(0).getMakespan() > longestMakespan) { //  Statistics
-				longestMakespan = population.get(0).getMakespan();          //
-				longestSchedule = population.get(0);  						//
-			}
-			
-			// Continue adding topNumIndividuals most fit UNIQUE individuals to crowd
-			while (numAdded < topNumIndividuals && popIdx < problem.getNumJobs()) {
-				if (population.get(popIdx++).getMakespan() == crowd.get(numAdded - 1).getMakespan()) continue;   // check if distance is same as last
-				crowd.add(population.get(popIdx - 1));   // add unique individual
-				totalMakespan += population.get(popIdx - 1).getMakespan();			      //
-				if (population.get(popIdx - 1).getMakespan() < shortestMakespan) {	      // 
-					shortestMakespan = population.get(popIdx - 1).getMakespan(); 	      //
-					shortestSchedule = population.get(popIdx - 1);						  // Crowd
-				} else if (population.get(popIdx - 1).getMakespan() > longestMakespan) {  //  Statistics
-					longestMakespan = population.get(popIdx - 1).getMakespan();           //
-					longestSchedule = population.get(popIdx - 1);  					  	  //
-				}
-				numAdded++;
-			}
-			if (numAdded != topNumIndividuals) {   // If topNumIndividuals unique individuals not found, duplicate most fit individual
-				for (int i = 0; i < (topNumIndividuals - numAdded); i++) {
-					crowd.add(crowd.get(0));
-					totalMakespan += crowd.get(0).getMakespan();   // Crowd Statistics
-				}
-			}
-		}
 		
-		// Set edge counter matrix
-		for (Schedule schedule : crowd) {
-			for (int idx = 1; idx < problem.getNumJobs(); idx++) {
-				int smallIdx = Math.min(schedule.getJob(idx - 1).getNumber() - 1, schedule.getJob(idx).getNumber() - 1);
-				int largeIdx = Math.max(schedule.getJob(idx - 1).getNumber() - 1, schedule.getJob(idx).getNumber() - 1);
-				edgeCounterMatrix[smallIdx][largeIdx]++;
-			}
-		}
-		//printMatrix(edgeCounterMatrix);
-
-		// Aggregate edges into new array using matrix
-		aggregateJobs.add(shortestSchedule.getJob(0));
-		
-		for (int jobIdx = 1; jobIdx < problem.getNumJobs(); jobIdx++) {
-			job = aggregateJobs.get(aggregateJobs.size() - 1);
-			cityNum = job.getNumber();
-			nextJob = null;
-			maxRowIdx = cityNum - 1; maxColIdx = cityNum - 1; maxIdx = -1;
-			
-			// Find most edges in row (iterate columns)
-			for (int idx = cityNum; idx < problem.getNumJobs(); idx++) {
-				if (aggregateJobs.contains(problem.getJobs().get(idx + 1))) continue;
-				if (edgeCounterMatrix[cityNum - 1][idx] > edgeCounterMatrix[maxRowIdx][maxColIdx]) {
-					// Found edge used more times
-					maxColIdx = idx;
-					maxIdx = idx;
-				} else if (edgeCounterMatrix[cityNum - 1][idx] == edgeCounterMatrix[maxRowIdx][maxColIdx]) {
-					// Found edge used the same amount - choose shortest
-					
-					// TODO
-					
-					//if (getCityDistance(job, cityList[idx]) < getCityDistance(job, cityList[maxColIdx])) {
-					//	maxColIdx = idx;
-					//	maxIdx = idx;
-					//}
-				}
-			}
-			
-			// Find most edges in column (iterate rows)
-			for (int idx = 0; idx < cityNum - 1; idx++) {
-				if (aggregateJobs.contains(problem.getJobs().get(idx + 1))) continue;
-				if (edgeCounterMatrix[idx][cityNum - 1] > edgeCounterMatrix[maxRowIdx][maxColIdx]) {
-					// Found edge used more times
-					maxRowIdx = idx;
-					maxColIdx = cityNum - 1;
-					maxIdx = idx;
-				} else if (edgeCounterMatrix[idx][cityNum - 1] == edgeCounterMatrix[maxRowIdx][maxColIdx]) {
-					// Found edge used the same amount - choose shortest
-					
-					// TODO
-					
-					//if (getCityDistance(job, cityList[idx]) < getCityDistance(job, cityList[maxRowIdx])) {
-					//	maxColIdx = idx;
-					//	maxIdx = idx;
-					//}
-				}
-			}
-				
-			// For some reason no city found, create new edge
-			if (maxIdx < 0) {
-				for (Job possibleJob : problem.getJobs()) {
-					if (aggregateJobs.contains(possibleJob)) continue;
-					if (nextJob == null) {
-						nextJob = possibleJob;
-						continue;
-					}
-					
-					// TODO
-					
-					//if (getCityDistance(possibleJob, job) < getCityDistance(nextJob, job)) nextJob = possibleJob;
-				}
-				
-				//System.out.println("\nCreating edge " + city + " to " + nextCity);   // BAD!
-				aggregateJobs.add(nextJob);
-				continue;
-			}
-			
-			aggregateJobs.add(problem.getJobs().get(maxIdx));
-		}*/
-		
-		for (int cIdx = 0; cIdx < numGARuns; cIdx++) {
+		// Get population from multiple GA runs
+		for (int pIdx = 0; pIdx < numGARuns; pIdx++) {
 			population = scheduleJobsGA(problem, populationSize, numGenerations, mutationRate, numElite);
 			
-			System.out.println("Pop at cIdx " + cIdx + ": " + population.get(0));
+			// Add best individuals of population to crowd
+			for (int iIdx = 0; iIdx < topNumIndividuals; iIdx++) {
+				schedule = population.get(iIdx); 
+				crowd.add(schedule);   
+				
+				// Iterate over jobs and count relative ordering compared to all jobs beforehand
+				for (int jobIdx = problem.getNumJobs() - 1; jobIdx > 0; jobIdx--) {
+					for (int priorJobIdx = jobIdx - 1; priorJobIdx >= 0; priorJobIdx--) {
+						// Increment number of times row comes after column
+						orderingCounterMatrix[schedule.getJob(jobIdx).getNumber()][schedule.getJob(priorJobIdx).getNumber()]++;
+					}
+				}
+				
+				System.out.println("Pop at idx " + iIdx + "." + pIdx + ": " + population.get(iIdx));
+			}			
 		}
+		
+		// Print Matrix
+		/*System.out.print("     ");
+		for (int colNum = 0; colNum < problem.getNumJobs(); colNum++) {System.out.print(String.format("%-3s", colNum));} System.out.print("\n");
+		for (int i = 0; i < problem.getNumJobs(); i++) {System.out.print("=====");} 
+		for (int row = 0; row < problem.getNumJobs(); row++) {
+			System.out.print(String.format("\n%-5s", row));
+			for (int col = 0; col < problem.getNumJobs(); col++) {
+				if (row == col) System.out.print("   ");
+				else System.out.print(String.format("%-3s", orderingCounterMatrix[row][col]));
+			}
+		} System.out.print("\n");*/
+		
+ArrayList<Job> aggregateJobs = problem.getJobs();
+		
+		for (int rowIdx = 0; rowIdx < problem.getNumJobs(); rowIdx++) {
+			aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
+		}
+		
+		
+		
+		Collections.sort(aggregateJobs, new Comparator<Job>() {
+			public int compare(Job j1, Job j2) {
+				if (j1.getFrequencyAfter() > j2.getFrequencyAfter()) return 1; 
+				if (j1.getFrequencyAfter() < j2.getFrequencyAfter()) return -1;
+				return 0;
+			}
+		});	
+		
+Schedule aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
+
+System.out.println("Agg Sched::  " + aggregateSchedule);
+//aggregateSchedule.printAssignments();
 		
 		//double mean = (totalMakespan / crowdSize);
 		//double std = 0;
