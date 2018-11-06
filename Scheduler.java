@@ -22,16 +22,16 @@ public class Scheduler {
 		File[] files = getFilesInFolder(dirName);
 		int choice = 0;
 		Scanner inputScanner = new Scanner(System.in);		
+		double[] results;
 		
 		while (true) {			
 			System.out.println("\n***********************************************");
 			System.out.println("Select file number. Enter 0 to Exit.");
 			printFiles(files);
 			
-			// TODO: catch first line
-			//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
-
 			try {
+				// TODO: catch first line
+				//???while (!inputScanner.hasNextLine()) inputScanner.nextLine();
 				choice = Integer.parseInt(inputScanner.nextLine());   // Get selection
 
 				if (choice >= 1 && choice <= files.length) {
@@ -41,7 +41,12 @@ public class Scheduler {
 					if (choice >= 1 && choice <= files.length) {
 						// File, populationSize, numGenerations, mutationRate
 						//scheduleJobs(files[choice - 1], 50, 500, 0.01);
-						scheduleWOC(files[choice - 1], 50, 500, 0.05);
+						results = scheduleWOC(files[choice - 1], 50, 500, 0.05);
+						
+						System.out.println("Shortest:  " + results[0]
+								+ "\nMean:      " + results[1]
+								+ "\nStd Dev:   " + results[2]
+								+ "\nAggregate: " + results[3]);
 					}
 					
 					long stopTime = System.nanoTime();
@@ -55,14 +60,18 @@ public class Scheduler {
 	}
 	
 	// Schedule and aggregate using Wisdom of Crowds
-	private static void scheduleWOC(File file, int populationSize, int numGenerations, double mutationRate) {
-		Problem problem = getProblemFromFile(file);
-		int numAdded, popIdx;   // Counter for number of individuals added, and an index for adding individuals
+	private static double[] scheduleWOC(File file, int populationSize, int numGenerations, double mutationRate) {
+		Problem problem = getProblemFromFile(file);   // Problem containing the jobs and machines
 		int numGARuns = 15, topNumIndividuals = 1;   // Number of GA's run and top number selected
-		int crowdSize = numGARuns * topNumIndividuals;
-		int numElite = Math.max(1, (int) (populationSize * 0.1));
+		int crowdSize = numGARuns * topNumIndividuals;   // Total number of individuals in the crowd
+		int numElite = Math.max(1, (int) (populationSize * 0.1));   // Number passed on to next generation without crossover
+		int crowdTotalMakespan = 0;
+		double crowdMeanMakespan, crowdStdDevMakespan = 0;
 		int[][] orderingCounterMatrix = new int[problem.getNumJobs()][problem.getNumJobs()];   // Matrix to count relative ordering of jobs
-		Schedule schedule;
+		Schedule schedule;   // An individual
+		Schedule shortestMakespanSchedule = null;
+		Schedule aggregateSchedule;
+		ArrayList<Job> aggregateJobs;
 		ArrayList<Schedule> population;
 		ArrayList<Schedule> crowd = new ArrayList<Schedule>();
 			
@@ -73,7 +82,6 @@ public class Scheduler {
 		//System.out.println(problem);
 		System.out.println("Population: " + populationSize + ", Generations: " + numGenerations 
 				+ ", Elite: " + numElite + ", Mutation: " + mutationRate + " %, Crowd: " + numGARuns + "x" + topNumIndividuals);
-
 		
 		// Get population from multiple GA runs
 		for (int pIdx = 0; pIdx < numGARuns; pIdx++) {
@@ -84,6 +92,10 @@ public class Scheduler {
 				schedule = population.get(iIdx); 
 				crowd.add(schedule);   
 				
+				crowdTotalMakespan += schedule.getMakespan();   // Add make span to total
+				if (shortestMakespanSchedule == null || shortestMakespanSchedule.getMakespan() < schedule.getMakespan()) 
+					shortestMakespanSchedule = schedule;   // Set shortest make span schedule
+				
 				// Iterate over jobs and count relative ordering compared to all jobs beforehand
 				for (int jobIdx = problem.getNumJobs() - 1; jobIdx > 0; jobIdx--) {
 					for (int priorJobIdx = jobIdx - 1; priorJobIdx >= 0; priorJobIdx--) {
@@ -91,31 +103,19 @@ public class Scheduler {
 						orderingCounterMatrix[schedule.getJob(jobIdx).getNumber()][schedule.getJob(priorJobIdx).getNumber()]++;
 					}
 				}
-				
-				System.out.println("Pop at idx " + iIdx + "." + pIdx + ": " + population.get(iIdx));
 			}			
 		}
+			
+		//printMatrix(orderingCounterMatrix, problem);
 		
-		// Print Matrix
-		/*System.out.print("     ");
-		for (int colNum = 0; colNum < problem.getNumJobs(); colNum++) {System.out.print(String.format("%-3s", colNum));} System.out.print("\n");
-		for (int i = 0; i < problem.getNumJobs(); i++) {System.out.print("=====");} 
-		for (int row = 0; row < problem.getNumJobs(); row++) {
-			System.out.print(String.format("\n%-5s", row));
-			for (int col = 0; col < problem.getNumJobs(); col++) {
-				if (row == col) System.out.print("   ");
-				else System.out.print(String.format("%-3s", orderingCounterMatrix[row][col]));
-			}
-		} System.out.print("\n");*/
+		aggregateJobs = problem.getJobs();   // Set aggregate jobs as the ordered list of jobs
 		
-ArrayList<Job> aggregateJobs = problem.getJobs();
-		
+		// Set frequency of times each job appears after the others
 		for (int rowIdx = 0; rowIdx < problem.getNumJobs(); rowIdx++) {
 			aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
-		}
+		}	
 		
-		
-		
+		// Sort aggregate jobs by frequency
 		Collections.sort(aggregateJobs, new Comparator<Job>() {
 			public int compare(Job j1, Job j2) {
 				if (j1.getFrequencyAfter() > j2.getFrequencyAfter()) return 1; 
@@ -124,24 +124,33 @@ ArrayList<Job> aggregateJobs = problem.getJobs();
 			}
 		});	
 		
-Schedule aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
+		// Create aggregate schedule from jobs
+		aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
 
-System.out.println("Agg Sched::  " + aggregateSchedule);
-//aggregateSchedule.printAssignments();
+		// Generate crowd statistics
+	 	crowdMeanMakespan = (crowdTotalMakespan / crowdSize);
+	 	for (Schedule s : crowd) { crowdStdDevMakespan += Math.pow(s.getMakespan() - crowdMeanMakespan, 2); }
+	 	crowdStdDevMakespan = Math.pow(crowdStdDevMakespan / crowdSize, .5);
 		
-		//double mean = (totalMakespan / crowdSize);
-		//double std = 0;
-		//for (Schedule s : crowd) { std += Math.pow(s.getMakespan() - mean, 2); }
-		//std = Math.pow(std / populationSize, .5);
-		
-		//aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
-		
-		//aggregateSchedule.printAssignments();
-		
-		//double[] results = new double[5];
-		//results[0] = shortestSchedule.getMakespan(); results[1] = mean; results[2] = (longestSchedule == null ? -1 : longestSchedule.getMakespan()); results[3] = std; results[4] = aggregateSchedule.getMakespan();
+		double[] results = new double[4];
+		results[0] = shortestMakespanSchedule.getMakespan(); 
+		results[1] = crowdMeanMakespan;  
+		results[2] = crowdStdDevMakespan; 
+		results[3] = aggregateSchedule.getMakespan();
 
-		//return results;
+		return results;
+	}
+	
+	private void printMatrix(int[][] orderingCounterMatrix, Problem problem) {
+		System.out.print("     ");
+		for (int colNum = 0; colNum < problem.getNumJobs(); colNum++) {System.out.print(String.format("%-3s", colNum));} System.out.print("\n");
+		for (int i = 0; i < problem.getNumJobs(); i++) {System.out.print("=====");} 
+		for (int row = 0; row < problem.getNumJobs(); row++) {
+			System.out.print(String.format("\n%-5s", row));
+			for (int col = 0; col < problem.getNumJobs(); col++)
+				if (row == col) System.out.print("   ");
+				else System.out.print(String.format("%-3s", orderingCounterMatrix[row][col]));
+		} System.out.print("\n");
 	}
 	
 	// Schedule jobs using a Genetic Algorithm
