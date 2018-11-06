@@ -156,7 +156,7 @@ public class Schedule {
 	
 	// To String
 	public String toString() {
-		return this.jobs.toString();
+		return this.makespan + " " + this.jobs.toString();
 	}
 
 }

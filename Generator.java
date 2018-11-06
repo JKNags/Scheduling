@@ -27,7 +27,7 @@ public class Generator {
 		int minNumJobs = 100;
 		int maxNumJobs = 200;
 		int minArrivalTime = 0;
-		int maxArrivalTime = 30;
+		int maxArrivalTime = 5;
 		int minProcessTime = 1;
 		int maxProcessTime = 12;
 		
