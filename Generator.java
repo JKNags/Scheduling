@@ -24,10 +24,10 @@ public class Generator {
 		// Input Variables //
 		int minNumMachines = 3;
 		int maxNumMachines = 6;
-		int minNumJobs = 100;
-		int maxNumJobs = 200;
+		int minNumJobs = 300;
+		int maxNumJobs = 300;
 		int minArrivalTime = 0;
-		int maxArrivalTime = 5;
+		int maxArrivalTime = 50;
 		int minProcessTime = 1;
 		int maxProcessTime = 12;
 		

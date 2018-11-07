@@ -115,13 +115,13 @@ public class Schedule {
 		this.makespan = scanTime;
 	}
 	
-	public void printAssignments() {
+	public String getAssignmentsString() {
 		String output = "";
 		int machineNum = 0;
 		int time, endTime;
 		int padding = Integer.toString(Math.max(this.makespan, 10 + this.jobs.size())).length() + 2;
 		
-		output += "makespan " + this.makespan + "\n\t";
+		output += "\n\t";
 		for (int i = 0; i < this.makespan; i++) output += String.format("%-" + padding + "d", i); output += "\n\t";
 		for (int i = 0; i < this.makespan; i++) for (int j = 0; j < padding; j++) output += "="; output += "\n";
 		
@@ -150,8 +150,7 @@ public class Schedule {
 			output += "\n";
 		}
 		
-		System.out.println("Schedule");
-		System.out.println(output);
+		return output;
 	}
 	
 	// To String
