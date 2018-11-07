@@ -23,13 +23,13 @@ public class Generator {
 		
 		// Input Variables //
 		int minNumMachines = 3;
-		int maxNumMachines = 6;
-		int minNumJobs = 300;
-		int maxNumJobs = 300;
+		int maxNumMachines = 5;
+		int minNumJobs = 500;
+		int maxNumJobs = 600;
 		int minArrivalTime = 0;
 		int maxArrivalTime = 50;
 		int minProcessTime = 1;
-		int maxProcessTime = 12;
+		int maxProcessTime = 7;
 		
 		// Print number of machines
 		int numMachines = rand.nextInt(maxNumMachines - minNumMachines + 1) + minNumMachines;		

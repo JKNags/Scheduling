@@ -154,20 +154,19 @@ public class Scheduler extends Application {
 			results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, elitePercent, numGARuns, topNumIndividuals);
 			
 			// Print results
-			System.out.println("Shortest:  " + results[0]
-					+ "\nMean:      " + results[1]
-					+ "\nStd Dev:   " + results[2]
-					+ "\nAggregate: " + results[3]);
-			this.tfAggregateMakespan.setText(Double.toString(results[3]));
-			this.tfShortestMakespan.setText(Double.toString(results[0]));
-			this.tfMeanMakespan.setText(decimalFormat.format(results[1]));
-			this.tfStdDevMakespan.setText(decimalFormat.format(results[2]));
+			//							   Aggregate		   Shortest			   Mean				   Std Dev
+			System.out.print("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3]);
+			this.tfAggregateMakespan.setText(Integer.toString((int) results[0]));
+			this.tfShortestMakespan.setText(Integer.toString((int) results[1]));
+			this.tfMeanMakespan.setText(decimalFormat.format(results[2]));
+			this.tfStdDevMakespan.setText(decimalFormat.format(results[3]));
 			
-			if (results[0] < results[3]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: INDIANRED");
-			else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: GREEN");
+			if (results[0] > results[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: INDIANRED");
+			else if (results[0] < results[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: GREEN");
+			else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: YELLOW");
 			
 		} catch (NumberFormatException e) {
-			System.out.println("Input poorly formatted. \n" + e.getMessage());
+			System.out.println("Input Poorly Formatted " + e.getMessage());
 		}
 	}
 	
@@ -221,7 +220,7 @@ public class Scheduler extends Application {
 		
 		// Print problem and initial populations
 		//System.out.println(problem);
-		System.out.println("Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite 
+		System.out.println(problem.getNumJobs() + " Jobs, Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite 
 				+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + crowdSize);
 		
 		// Get population from multiple GA runs
@@ -258,9 +257,12 @@ public class Scheduler extends Application {
 		
 		// Sort aggregate jobs by frequency
 		Collections.sort(aggregateJobs, new Comparator<Job>() {
-			public int compare(Job j1, Job j2) {
+			public int compare(Job j1, Job j2) {				
 				if (j1.getFrequencyAfter() > j2.getFrequencyAfter()) return 1; 
 				if (j1.getFrequencyAfter() < j2.getFrequencyAfter()) return -1;
+				if (j1.getArrivalTime() < j2.getArrivalTime()) return -1;
+				if (j1.getTotalProcessTime() > j2.getTotalProcessTime()) return 1;
+				if (j1.getTotalProcessTime() < j2.getTotalProcessTime()) return -1;
 				return 0;
 			}
 		});	
@@ -274,13 +276,13 @@ public class Scheduler extends Application {
 	 	crowdStdDevMakespan = Math.pow(crowdStdDevMakespan / crowdSize, .5);
 		
 		double[] results = new double[4];
-		results[0] = shortestMakespanSchedule.getMakespan(); 
-		results[1] = crowdMeanMakespan;  
-		results[2] = crowdStdDevMakespan; 
-		results[3] = aggregateSchedule.getMakespan();
+		results[0] = aggregateSchedule.getMakespan(); 
+		results[1] = shortestMakespanSchedule.getMakespan();  
+		results[2] = crowdMeanMakespan; 
+		results[3] = crowdStdDevMakespan;
 
-		System.out.println(aggregateSchedule.getAssignmentsString());
-		this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+		//System.out.println(aggregateSchedule.getAssignmentsString());
+		//this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
 
 		return results;
 	}

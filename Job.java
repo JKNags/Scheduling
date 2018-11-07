@@ -1,5 +1,7 @@
 package project6;
 
+import java.util.stream.IntStream;
+
 public class Job {
 	
 	// Instance Variables
@@ -26,6 +28,10 @@ public class Job {
 	
 	public int[] getProcessTimes() {
 		return this.processTimes;
+	}
+	
+	public int getTotalProcessTime() {
+		return IntStream.of(this.processTimes).sum();
 	}
 	
 	public int getProcessTime(int machineNum) {
