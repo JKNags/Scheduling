@@ -46,6 +46,7 @@ public class Scheduler extends Application {
 	TextArea taAggregateAssignments;
 	TextField tfAggregateMakespan;
 	TextField tfShortestMakespan;
+	TextField tfDifference;
 	TextField tfMeanMakespan;
 	TextField tfStdDevMakespan;
 	
@@ -87,6 +88,8 @@ public class Scheduler extends Application {
 		Label lblShortestMakespan = new Label("Shortest");
 		tfShortestMakespan = new TextField();
 		Label lblMeanMakespan = new Label("Mean");
+		Label lblDifference = new Label("Difference");
+		tfDifference = new TextField();
 		tfMeanMakespan = new TextField();
 		Label lblStdDevMakespan = new Label("Std. Dev.");
 		tfStdDevMakespan = new TextField();
@@ -120,10 +123,12 @@ public class Scheduler extends Application {
 		gridPane.add(tfAggregateMakespan, 1, 11, 1, 1);
 		gridPane.add(lblShortestMakespan, 2, 10, 1, 1);
 		gridPane.add(tfShortestMakespan, 2, 11, 1, 1);
-		gridPane.add(lblMeanMakespan, 3, 10, 1, 1);
-		gridPane.add(tfMeanMakespan, 3, 11, 1, 1);
-		gridPane.add(lblStdDevMakespan, 4, 10, 1, 1);
-		gridPane.add(tfStdDevMakespan, 4, 11, 1, 1);	
+		gridPane.add(lblDifference, 3, 10, 1, 1);
+		gridPane.add(tfDifference, 3, 11, 1, 1);
+		gridPane.add(lblMeanMakespan, 4, 10, 1, 1);
+		gridPane.add(tfMeanMakespan, 4, 11, 1, 1);
+		gridPane.add(lblStdDevMakespan, 5, 10, 1, 1);
+		gridPane.add(tfStdDevMakespan, 5, 11, 1, 1);	
         
 		// Add elements to stage
         Group root = new Group(gridPane);
@@ -155,9 +160,10 @@ public class Scheduler extends Application {
 			
 			// Print results
 			//							   Aggregate		   Shortest			   Mean				   Std Dev
-			System.out.print("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3]);
+			System.out.println("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3]);
 			this.tfAggregateMakespan.setText(Integer.toString((int) results[0]));
 			this.tfShortestMakespan.setText(Integer.toString((int) results[1]));
+			this.tfDifference.setText((int) (results[0] - results[1]) + " (" + decimalFormat.format(Math.abs(results[0] - results[1]) / ((results[0] + results[1]) / 200.0)) + "%)"); 
 			this.tfMeanMakespan.setText(decimalFormat.format(results[2]));
 			this.tfStdDevMakespan.setText(decimalFormat.format(results[3]));
 			
@@ -259,13 +265,22 @@ public class Scheduler extends Application {
 		Collections.sort(aggregateJobs, new Comparator<Job>() {
 			public int compare(Job j1, Job j2) {				
 				if (j1.getFrequencyAfter() > j2.getFrequencyAfter()) return 1; 
-				if (j1.getFrequencyAfter() < j2.getFrequencyAfter()) return -1;
-				if (j1.getArrivalTime() < j2.getArrivalTime()) return -1;
+				if (j1.getFrequencyAfter() < j2.getFrequencyAfter()) return -1; 
 				if (j1.getTotalProcessTime() > j2.getTotalProcessTime()) return 1;
 				if (j1.getTotalProcessTime() < j2.getTotalProcessTime()) return -1;
 				return 0;
 			}
 		});	
+		
+		// Ensure first jobs starts at time 0 (assuming one does)
+		/*if (aggregateJobs.get(0).getArrivalTime() != 0) {
+			for (int idx = 1; idx < problem.getNumJobs(); idx++) {
+				if (aggregateJobs.get(idx).getArrivalTime() == 0) {
+					swapJobs(aggregateJobs, 0, idx);
+					break;
+				}
+			}
+		}*/
 		
 		// Create aggregate schedule from jobs
 		aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
@@ -281,7 +296,9 @@ public class Scheduler extends Application {
 		results[2] = crowdMeanMakespan; 
 		results[3] = crowdStdDevMakespan;
 
-		//System.out.println(aggregateSchedule.getAssignmentsString());
+		System.out.println("Agg:  " + aggregateSchedule.getJobs());
+		System.out.println("Best: " + shortestMakespanSchedule.getJobs());
+		
 		//this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
 
 		return results;
@@ -318,6 +335,15 @@ public class Scheduler extends Application {
 			Schedule schedule = new Schedule(problem);   // Automatically randomizes
 			population.add(schedule);
 		}
+		
+		// Sort population
+		Collections.sort(population, new Comparator<Schedule>() {
+			public int compare(Schedule s1, Schedule s2) {
+				if (s1.getMakespan() > s2.getMakespan()) return 1; 
+				if (s1.getMakespan() < s2.getMakespan()) return -1;
+				return 0;
+			}
+		});	
 		
 		nextGenPopulation = population;
 		
@@ -383,7 +409,6 @@ public class Scheduler extends Application {
 		double mutate;
 		boolean previousMatch = false;
 		boolean firstMatch = false;
-		Job tempJob;
 		ArrayList<Job> child1Jobs = new ArrayList<Job>();
 		ArrayList<Job> child2Jobs = new ArrayList<Job>();
 		Schedule child1, child2;
@@ -443,18 +468,14 @@ public class Scheduler extends Application {
 			mutate = rand.nextDouble();
 			if (mutate < mutationPercent) { 
 				swapIdx = rand.nextInt(child1Jobs.size() - 2) + 1;
-				tempJob = child1Jobs.get(swapIdx);
-				child1Jobs.set(swapIdx, child1Jobs.get(idx));
-				child1Jobs.set(idx, tempJob);
+				swapJobs(child1Jobs, swapIdx, idx);
 			}
 		}
 		for (int idx = 0; idx < child2Jobs.size(); idx++) {
 			mutate = rand.nextDouble();
 			if (mutate < mutationPercent) { 
 				swapIdx = rand.nextInt(child2Jobs.size() - 2) + 1;
-				tempJob = child2Jobs.get(swapIdx);
-				child2Jobs.set(swapIdx, child2Jobs.get(idx));
-				child2Jobs.set(idx, tempJob);
+				swapJobs(child2Jobs, swapIdx, idx);
 			}
 		}
 		
@@ -530,6 +551,13 @@ public class Scheduler extends Application {
 		}
 		
 		return new Problem(numMachines, jobs);
+	}
+	
+	// Swap jobs
+	private static void swapJobs(ArrayList<Job> jobs, int idx1, int idx2) {
+		Job tempJob = jobs.get(idx1);
+		jobs.set(idx1, jobs.get(idx2));
+		jobs.set(idx2, tempJob);
 	}
 	
 	// Print file names from a list of files

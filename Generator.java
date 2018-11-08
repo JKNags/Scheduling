@@ -24,12 +24,11 @@ public class Generator {
 		// Input Variables //
 		int minNumMachines = 3;
 		int maxNumMachines = 5;
-		int minNumJobs = 500;
-		int maxNumJobs = 600;
-		int minArrivalTime = 0;
+		int minNumJobs = 100;
+		int maxNumJobs = 100;
 		int maxArrivalTime = 50;
-		int minProcessTime = 1;
-		int maxProcessTime = 7;
+		int minProcessTime = 15;
+		int maxProcessTime = 35;
 		
 		// Print number of machines
 		int numMachines = rand.nextInt(maxNumMachines - minNumMachines + 1) + minNumMachines;		
@@ -41,7 +40,7 @@ public class Generator {
 		// Get job arrival times and sort them
 		arrivalTimes = new int[numJobs];
 		for (int idx = 0; idx < numJobs; idx++) {
-			arrivalTimes[idx] = (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime);
+			arrivalTimes[idx] = (rand.nextInt(maxArrivalTime + 1));
 		}
 		Arrays.sort(arrivalTimes);
 		
