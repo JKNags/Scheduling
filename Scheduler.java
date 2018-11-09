@@ -37,6 +37,7 @@ public class Scheduler extends Application {
 	// Global Variables 
 	String dirName = "data";
 	ListView<String> lvFileNames;
+	TextField tfTestNum;
 	TextField tfPopulationSize;
 	TextField tfNumGenerations;
 	TextField tfMutationPercent;
@@ -59,6 +60,10 @@ public class Scheduler extends Application {
 		Button btnStart = new Button("Start");
 		btnStart.setOnAction(this::btnStartOnAction);
 		
+		// Test button
+		Button btnTest = new Button("Test");
+		btnTest.setOnAction(this::btnTestOnAction);
+		
 		// File list view
 		lvFileNames = new ListView<String>(getFileNames());
 		lvFileNames = new ListView<String>(getFileNames());
@@ -77,6 +82,8 @@ public class Scheduler extends Application {
 		tfGARuns = new TextField("10");
 		Label lblTopIndividuals = new Label("Top Individuals");
 		tfTopIndividuals = new TextField("1");
+		Label lblTestNum = new Label("Test #");
+		tfTestNum = new TextField("5");
 		
 		// Results
 		Label lblAggregateAssignments = new Label("Aggregate Job Assignments");
@@ -104,6 +111,11 @@ public class Scheduler extends Application {
 		gridPane.add(lvFileNames, 0, 0, 1, 10);
 		gridPane.add(btnStart, 0, 11, 1, 1);
 		GridPane.setHalignment(btnStart, HPos.CENTER);
+		gridPane.add(btnTest, 0, 13, 1, 1);
+		GridPane.setHalignment(btnTest, HPos.CENTER);
+		gridPane.add(lblTestNum, 1, 12, 1, 1);
+		gridPane.add(tfTestNum, 1, 13, 1, 1);
+		
 		gridPane.add(lblPopulationSize, 1, 0, 1, 1);
 		gridPane.add(tfPopulationSize, 1, 1, 1, 1);
 		gridPane.add(lblNumGenerations, 2, 0, 1, 1);
@@ -141,6 +153,7 @@ public class Scheduler extends Application {
 	
 	private void btnStartOnAction(ActionEvent event) {
 		int populationSize, numGenerations, numGARuns, topNumIndividuals;
+		int numElite;
 		double mutationPercent, elitePercent;
 		double[] results;
 		Problem problem = getProblem(lvFileNames.getSelectionModel().getSelectedItem());
@@ -155,8 +168,15 @@ public class Scheduler extends Application {
 			mutationPercent = Double.parseDouble(this.tfMutationPercent.getText()) / 100.0;
 			elitePercent = Double.parseDouble(this.tfElitism.getText()) / 100.0;
 			
+			numElite = Math.max(1, (int) (populationSize * elitePercent));
+			
+			// Print problem and initial populations
+			//System.out.println(problem);
+			System.out.println(problem.getNumJobs() + " Jobs, Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite 
+					+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + (numGARuns*topNumIndividuals));
+			
 			// Run Wisdom of Crowds scheduling
-			results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, elitePercent, numGARuns, topNumIndividuals);
+			results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
 			
 			// Print results
 			//							   Aggregate		   Shortest			   Mean				   Std Dev
@@ -170,6 +190,67 @@ public class Scheduler extends Application {
 			if (results[0] > results[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: INDIANRED");
 			else if (results[0] < results[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: GREEN");
 			else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: YELLOW");
+			
+		} catch (NumberFormatException e) {
+			System.out.println("Input Poorly Formatted " + e.getMessage());
+		}
+	}
+	
+	private void btnTestOnAction(ActionEvent event) {
+		int populationSize, numGenerations, numGARuns, topNumIndividuals;
+		int numElite;
+		int numTests;
+		double mutationPercent, elitePercent;
+		double[] results;
+		double[] testResults = new double[4];
+		Problem problem = getProblem(lvFileNames.getSelectionModel().getSelectedItem());
+		DecimalFormat decimalFormat = new DecimalFormat("#0.00");
+		
+		Arrays.fill(testResults, 0);
+		
+		try {
+			// Parse input controls
+			numTests = Integer.parseInt(this.tfTestNum.getText());
+			populationSize = Integer.parseInt(this.tfPopulationSize.getText());
+			numGenerations = Integer.parseInt(this.tfNumGenerations.getText());
+			numGARuns = Integer.parseInt(this.tfGARuns.getText());
+			topNumIndividuals = Integer.parseInt(this.tfTopIndividuals.getText());
+			mutationPercent = Double.parseDouble(this.tfMutationPercent.getText()) / 100.0;
+			elitePercent = Double.parseDouble(this.tfElitism.getText()) / 100.0;
+			
+			numElite = Math.max(1, (int) (populationSize * elitePercent));
+			
+			// Print problem and initial populations
+			//System.out.println(problem);
+			System.out.println(problem.getNumJobs() + " Jobs, Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite 
+					+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + (numGARuns*topNumIndividuals));
+			
+			// Run Wisdom of Crowds scheduling
+			for (int idx = 0; idx < numTests; idx++) {
+				results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
+				
+				testResults[0] += results[0];
+				if (testResults[1] == 0 || results[1] < testResults[1]) testResults[1] = results[1];
+				testResults[2] += results[2];
+				testResults[3] += results[3];
+			}
+			
+			testResults[0] /= (double) numTests;
+			testResults[2] /= (double) numTests;
+			testResults[3] /= (double) numTests;
+			
+			// Print results
+			//							                               Aggregate		   Shortest			       Mean				       Std Dev
+			System.out.println("Test " + numTests + " Makespan " + testResults[0] + "\t" + testResults[1] + "\t" + testResults[2] + "\t" + testResults[3]);
+			this.tfAggregateMakespan.setText(Integer.toString((int) testResults[0]));
+			this.tfShortestMakespan.setText(Integer.toString((int) testResults[1]));
+			this.tfDifference.setText((int) (testResults[0] - testResults[1]) + " (" + decimalFormat.format(Math.abs(testResults[0] - testResults[1]) / ((testResults[0] + testResults[1]) / 200.0)) + "%)"); 
+			this.tfMeanMakespan.setText(decimalFormat.format(testResults[2]));
+			this.tfStdDevMakespan.setText(decimalFormat.format(testResults[3]));
+			
+			//if (testResults[0] > testResults[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: INDIANRED");
+			//else if (testResults[0] < testResults[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: GREEN");
+			//else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: YELLOW");
 			
 		} catch (NumberFormatException e) {
 			System.out.println("Input Poorly Formatted " + e.getMessage());
@@ -208,9 +289,8 @@ public class Scheduler extends Application {
 	
 	// Schedule and aggregate using Wisdom of Crowds
 	private double[] scheduleWOC(Problem problem, int populationSize, int numGenerations, 
-										double mutationPercent, double elitePercent, int numGARuns, int topNumIndividuals) {
+										double mutationPercent, int numElite, int numGARuns, int topNumIndividuals) {
 		int crowdSize = numGARuns * topNumIndividuals;   // Total number of individuals in the crowd
-		int numElite = Math.max(1, (int) (populationSize * elitePercent));   // Number passed on to next generation without crossover
 		int crowdTotalMakespan = 0;
 		double crowdMeanMakespan, crowdStdDevMakespan = 0;
 		int[][] orderingCounterMatrix = new int[problem.getNumJobs()][problem.getNumJobs()];   // Matrix to count relative ordering of jobs
@@ -223,11 +303,6 @@ public class Scheduler extends Application {
 			
 		// Initialize path edges to 0
 		for (int[] row : orderingCounterMatrix) Arrays.fill(row, 0);
-		
-		// Print problem and initial populations
-		//System.out.println(problem);
-		System.out.println(problem.getNumJobs() + " Jobs, Population: " + populationSize + ", Generations: " + numGenerations + ", Elite: " + numElite 
-				+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + crowdSize);
 		
 		// Get population from multiple GA runs
 		for (int pIdx = 0; pIdx < numGARuns; pIdx++) {
@@ -249,6 +324,9 @@ public class Scheduler extends Application {
 						orderingCounterMatrix[schedule.getJob(jobIdx).getNumber()][schedule.getJob(priorJobIdx).getNumber()]++;
 					}
 				}
+				
+				
+				System.out.println("S" + pIdx + "." + iIdx + " " + schedule);
 			}			
 		}
 			
@@ -257,8 +335,15 @@ public class Scheduler extends Application {
 		aggregateJobs = problem.getJobs();   // Set aggregate jobs as the ordered list of jobs
 		
 		// Set frequency of times each job appears after the others
+		int freq;
 		for (int rowIdx = 0; rowIdx < problem.getNumJobs(); rowIdx++) {
-			aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
+			//aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
+			
+			freq = 0;
+			for (int colIdx = 0; colIdx < problem.getNumJobs(); colIdx++) {
+				freq += Math.pow(orderingCounterMatrix[rowIdx][colIdx], 3);
+			}
+			aggregateJobs.get(rowIdx).setFrequencyAfter(freq);
 		}	
 		
 		// Sort aggregate jobs by frequency
@@ -271,17 +356,7 @@ public class Scheduler extends Application {
 				return 0;
 			}
 		});	
-		
-		// Ensure first jobs starts at time 0 (assuming one does)
-		/*if (aggregateJobs.get(0).getArrivalTime() != 0) {
-			for (int idx = 1; idx < problem.getNumJobs(); idx++) {
-				if (aggregateJobs.get(idx).getArrivalTime() == 0) {
-					swapJobs(aggregateJobs, 0, idx);
-					break;
-				}
-			}
-		}*/
-		
+
 		// Create aggregate schedule from jobs
 		aggregateSchedule = new Schedule(aggregateJobs, problem.getNumMachines());
 
