@@ -31,7 +31,7 @@ public class Scheduler extends Application {
 	/*
 	 * Scheduler
 	 * Reads jobs from file
-	 * Creates minimum schedule
+	 * Outputs minimum job schedule using GA and WOC
 	 */
 	
 	// Global Variables 
@@ -51,10 +51,12 @@ public class Scheduler extends Application {
 	TextField tfMeanMakespan;
 	TextField tfStdDevMakespan;
 	
+	// Main function to launch JavaFX UI
 	public static void main(String[] args) {
 		launch(args);
 	}
 	
+	// Set up JavaFX UI
 	public void start(Stage primaryStage)  {
 		// Start button
 		Button btnStart = new Button("Start");
@@ -151,6 +153,7 @@ public class Scheduler extends Application {
         primaryStage.show(); 
 	}
 	
+	// Start button click event that creates one WOC solution
 	private void btnStartOnAction(ActionEvent event) {
 		int populationSize, numGenerations, numGARuns, topNumIndividuals;
 		int numElite;
@@ -179,7 +182,7 @@ public class Scheduler extends Application {
 			results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
 			
 			// Print results
-			//							   Aggregate		   Shortest			   Mean				   Std Dev
+			//							     Aggregate		     Shortest			 Mean				 Std Dev
 			System.out.println("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3]);
 			this.tfAggregateMakespan.setText(Integer.toString((int) results[0]));
 			this.tfShortestMakespan.setText(Integer.toString((int) results[1]));
@@ -192,10 +195,11 @@ public class Scheduler extends Application {
 			else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: YELLOW");
 			
 		} catch (NumberFormatException e) {
-			System.out.println("Input Poorly Formatted " + e.getMessage());
+			System.err.println("Input Poorly Formatted " + e.getMessage());
 		}
 	}
 	
+	// Test button click event that creates multiple WOC solutions
 	private void btnTestOnAction(ActionEvent event) {
 		int populationSize, numGenerations, numGARuns, topNumIndividuals;
 		int numElite;
@@ -240,7 +244,7 @@ public class Scheduler extends Application {
 			testResults[3] /= (double) numTests;
 			
 			// Print results
-			//							                               Aggregate		   Shortest			       Mean				       Std Dev
+			//							                           Aggregate		       Shortest			       Mean				       Std Dev
 			System.out.println("Test " + numTests + " Makespan " + testResults[0] + "\t" + testResults[1] + "\t" + testResults[2] + "\t" + testResults[3]);
 			this.tfAggregateMakespan.setText(Integer.toString((int) testResults[0]));
 			this.tfShortestMakespan.setText(Integer.toString((int) testResults[1]));
@@ -248,12 +252,10 @@ public class Scheduler extends Application {
 			this.tfMeanMakespan.setText(decimalFormat.format(testResults[2]));
 			this.tfStdDevMakespan.setText(decimalFormat.format(testResults[3]));
 			
-			//if (testResults[0] > testResults[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: INDIANRED");
-			//else if (testResults[0] < testResults[1]) this.tfAggregateMakespan.setStyle("-fx-control-inner-background: GREEN");
-			//else this.tfAggregateMakespan.setStyle("-fx-control-inner-background: YELLOW");
+			this.tfAggregateMakespan.setStyle("-fx-control-inner-background: WHITE");
 			
 		} catch (NumberFormatException e) {
-			System.out.println("Input Poorly Formatted " + e.getMessage());
+			System.err.println("Input Poorly Formatted " + e.getMessage());
 		}
 	}
 	
@@ -266,6 +268,7 @@ public class Scheduler extends Application {
 		ObservableList<String> obFileList = FXCollections.observableArrayList();
 		
 		try {
+			// Get all text files in directory
 			for (File file : fileList) {
 				if (file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) {
 					strFileList.add(file.getName());
@@ -281,7 +284,7 @@ public class Scheduler extends Application {
 	        obFileList.addAll(strSortedFileList);
 	        
 		} catch (NullPointerException e) {
-			System.err.println("Error: " + e.getMessage());
+			System.err.println("Error opening File or folder: " + e.getMessage());
 		}
 		
 		return obFileList;
@@ -313,9 +316,9 @@ public class Scheduler extends Application {
 				schedule = population.get(iIdx); 
 				crowd.add(schedule);   
 				
-				crowdTotalMakespan += schedule.getMakespan();   // Add make span to total
+				crowdTotalMakespan += schedule.getMakespan();   // Add make-span to total
 				if (shortestMakespanSchedule == null || schedule.getMakespan() < shortestMakespanSchedule.getMakespan()) 
-					shortestMakespanSchedule = schedule;   // Set shortest make span schedule
+					shortestMakespanSchedule = schedule;   // Set shortest make-span schedule
 				
 				// Iterate over jobs and count relative ordering compared to all jobs beforehand
 				for (int jobIdx = problem.getNumJobs() - 1; jobIdx > 0; jobIdx--) {
@@ -335,15 +338,8 @@ public class Scheduler extends Application {
 		aggregateJobs = problem.getJobs();   // Set aggregate jobs as the ordered list of jobs
 		
 		// Set frequency of times each job appears after the others
-		int freq;
 		for (int rowIdx = 0; rowIdx < problem.getNumJobs(); rowIdx++) {
-			//aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
-			
-			freq = 0;
-			for (int colIdx = 0; colIdx < problem.getNumJobs(); colIdx++) {
-				freq += Math.pow(orderingCounterMatrix[rowIdx][colIdx], 3);
-			}
-			aggregateJobs.get(rowIdx).setFrequencyAfter(freq);
+			aggregateJobs.get(rowIdx).setFrequencyAfter(IntStream.of(orderingCounterMatrix[rowIdx]).sum());
 		}	
 		
 		// Sort aggregate jobs by frequency
@@ -374,7 +370,7 @@ public class Scheduler extends Application {
 		System.out.println("Agg:  " + aggregateSchedule.getJobs());
 		System.out.println("Best: " + shortestMakespanSchedule.getJobs());
 		
-		//this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+		this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
 
 		return results;
 	}
@@ -401,17 +397,16 @@ public class Scheduler extends Application {
 		ArrayList<Schedule> population = new ArrayList<Schedule>();
 		ArrayList<Schedule> nextGenPopulation = new ArrayList<Schedule>(populationSize);
 		
-		if (populationSize % 2 == 1) throw new RuntimeException("\nPopulation Size must be even");
-		
-		if (numElite % 2 == 1) numElite++; // Ensure numElite is even
+		if (populationSize % 2 == 1) populationSize++;   // Ensure populationSize is even
+		if (numElite % 2 == 1) numElite++;   // Ensure numElite is even
 		
 		// Create the initial population
 		for (int idx = 0; idx < populationSize; idx++) {
-			Schedule schedule = new Schedule(problem);   // Automatically randomizes
+			Schedule schedule = new Schedule(problem);   // Automatically randomizes job order
 			population.add(schedule);
 		}
 		
-		// Sort population
+		// Sort initial population by make-span
 		Collections.sort(population, new Comparator<Schedule>() {
 			public int compare(Schedule s1, Schedule s2) {
 				if (s1.getMakespan() > s2.getMakespan()) return 1; 
@@ -420,13 +415,13 @@ public class Scheduler extends Application {
 			}
 		});	
 		
-		nextGenPopulation = population;
+		nextGenPopulation = population;   // Initialize nextGenPopulation 
 		
 		// Run Genetic Algorithm
 		for (int genIdx = 0; genIdx < numGenerations; genIdx++) {
 			//System.out.println("## Generation " + genIdx + " ###");
 			
-			// Fill wheel
+			// Fill wheel - a cumulative distribution of fitness
 			rouletteWheel = getRouletteWheel(population, numElite);
 			
 			//Add elite individuals
@@ -475,12 +470,13 @@ public class Scheduler extends Application {
 	
 	// Crossover both parents and add offspring to population
 	// SBOX - blocks of at least two jobs are auto carried over to children, remaining slots are added from corresponding parent
-	//			until a stop point is met, then rest is filled from opposite parent
-	public static void crossoverSBOX(ArrayList<Schedule> population, int startIdx, Schedule parent1, Schedule parent2, double mutationPercent, int numMachines) {
+	//	      until a stop point is met, then rest is filled from opposite parent
+	public static void crossoverSBOX(ArrayList<Schedule> population, int startIdx, 
+									Schedule parent1, Schedule parent2, double mutationPercent, int numMachines) {
 		Random rand = new Random();
 		int parent1Idx = 0, parent2Idx = 0;
 		int swapIdx;
-		int cutIdx = rand.nextInt(parent1.getNumJobs() - 2) + 2;
+		int crossoverIdx = rand.nextInt(parent1.getNumJobs() - 2) + 2;
 		double mutate;
 		boolean previousMatch = false;
 		boolean firstMatch = false;
@@ -495,16 +491,16 @@ public class Scheduler extends Application {
 		}
 
 		// Set matching pairs from the parent in the children
-		for (int idx = 0; idx < parent1.getNumJobs(); idx++) {
-			// Jobs at this index don't match
+		for (int idx = 0; idx < parent1.getNumJobs(); idx++) {		
 			if (!parent1.getJob(idx).equals(parent2.getJob(idx))) {
+				// Jobs at this index don't match
 				previousMatch = firstMatch = false;
 				continue;
 			}
 			
-			// Jobs match
-			if (previousMatch) {
-				if (firstMatch) {
+			// Jobs match at this index
+			if (previousMatch) {   // A previous index matched
+				if (firstMatch) {   // The previous index was the first
 					child1Jobs.set(idx - 1, parent1.getJob(idx - 1));
 					child2Jobs.set(idx - 1, parent2.getJob(idx - 1));
 					firstMatch = false;
@@ -512,20 +508,20 @@ public class Scheduler extends Application {
 				
 				child1Jobs.set(idx, parent1.getJob(idx));
 				child2Jobs.set(idx, parent2.getJob(idx));
-			} else {
+			} else {   // First possible index of block 
 				previousMatch = true;
 				firstMatch = true;
 			}
 		}
 
-		// Set jobs from corresponding parent until cut index
-		for (int idx = 0; idx < cutIdx; idx++) {
+		// Set jobs from corresponding parent until crossover index
+		for (int idx = 0; idx < crossoverIdx; idx++) {
 			if (child1Jobs.get(idx) == null) child1Jobs.set(idx, parent1.getJob(idx));
 			if (child2Jobs.get(idx) == null) child2Jobs.set(idx, parent2.getJob(idx));
 		}
 		
 		// Set remaining jobs from other parent
-		for (int idx = cutIdx; idx < parent1.getNumJobs(); idx++) {
+		for (int idx = crossoverIdx; idx < parent1.getNumJobs(); idx++) {
 			if (child1Jobs.get(idx) == null) {
 				while ( child1Jobs.contains(parent2.getJob(parent2Idx)) ) parent2Idx++;
 				child1Jobs.set(idx, parent2.getJob(parent2Idx));
@@ -569,30 +565,30 @@ public class Scheduler extends Application {
 		if (size <= 1) return new double[] {100};
         double runningTotal = 0, total = 0;
 		double[] wheel = new double[size];
-        double[] timeInverses = new double[size];
+        double[] makespanInverses = new double[size];
 
-        // Set inverse array
+        // Set inverse array and count up total make-span of population
         for (int idx = 0; idx < size; idx++) {
-        	timeInverses[idx] = 1.0 / (double) population.get(idx).getMakespan();
-        	total += timeInverses[idx];
+        	makespanInverses[idx] = 1.0 / (double) population.get(idx).getMakespan();
+        	total += makespanInverses[idx];
         }
         
         // Set running total of inverses and assign weighted probability of selection
         for (int idx = 0; idx < size; idx++) {
-        	runningTotal += timeInverses[idx];
+        	runningTotal += makespanInverses[idx];
         	wheel[idx] = 100 * runningTotal / total;
         }
         
         return wheel;
 	}
 	
-	// Return a list of jobs from file
+	// Return a list of jobs and machines from file
 	public Problem getProblem(String fileName) {
+		int numMachines = 0, jobNumber, arrivalTime;
+		int[] processTimes = null;
 		Scanner scanner = null;
 		ArrayList<Job> jobs = new ArrayList<Job>(); 
 		String[] lineSplit;
-		int numMachines = 0, jobNumber, arrivalTime;
-		int[] processTimes = null;
 
 		try {
 			scanner = new Scanner(new File(this.dirName + "/" + fileName));
@@ -605,17 +601,17 @@ public class Scheduler extends Application {
 				numMachines = Integer.parseInt(lineSplit[1]);
 			}
 			
-			processTimes = new int[numMachines];
+			processTimes = new int[numMachines];   // Initialize array of process times
 			
-			// Get jobs
+			// Get jobs - "JOB n a p1..."
 			while (scanner.hasNext()) {
 				lineSplit = scanner.nextLine().split(" ");
 				if (lineSplit.length != (3 + numMachines)) 
 					throw new RuntimeException("\nError parsing file - Job line does not have 3 + numMachines elements");
 				jobNumber = Integer.parseInt(lineSplit[1]);
 				arrivalTime = Integer.parseInt(lineSplit[2]);
-				for (int mIdx = 0; mIdx < numMachines; mIdx++) {
-					processTimes[mIdx] = Integer.parseInt(lineSplit[mIdx + 3]);
+				for (int idx = 0; idx < numMachines; idx++) {
+					processTimes[idx] = Integer.parseInt(lineSplit[3 + idx]);
 				}
 				jobs.add(new Job(jobNumber, arrivalTime, processTimes.clone()));
 			}

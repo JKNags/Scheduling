@@ -11,13 +11,11 @@ public class Generator {
 	/*
 	 * Generator
 	 * Writes file of random jobs
-	 * Tasks are printed under jobs as <Machine number> <Process time>
-	 * Machines can be in any order
 	 */
 
 	public static void main(String[] args) {
-		Random rand = new Random();
 		int[] arrivalTimes; 
+		Random rand = new Random();
 		String output = "";
 		String dirName = "data";
 		
@@ -40,13 +38,12 @@ public class Generator {
 		// Get job arrival times and sort them
 		arrivalTimes = new int[numJobs];
 		for (int idx = 0; idx < numJobs; idx++) {
-			arrivalTimes[idx] = (rand.nextInt(maxArrivalTime + 1));
+			arrivalTimes[idx] = rand.nextInt(maxArrivalTime + 1);
 		}
 		Arrays.sort(arrivalTimes);
 		
 		// Print jobs
-		for (int j = 0; j < numJobs; j++) {				// JOB <number> <arrival time> {<process time for each machine>}
-			//output += "JOB " + j + " " + (rand.nextInt(maxArrivalTime - minArrivalTime + 1) + minArrivalTime);
+		for (int j = 0; j < numJobs; j++) {	  // JOB <number> <arrival time> {<process time for each machine>}
 			output += "JOB " + j + " " + arrivalTimes[j];
 			for (int m = 0; m < numMachines; m++) {
 				output += " " + (rand.nextInt(maxProcessTime - minProcessTime + 1) + minProcessTime);

@@ -43,8 +43,6 @@ public class Schedule {
 		return this.makespan;
 	}
 	
-	// Setters
-	
 	// Create assignments for current job order
 	private void createAssignments(int numMachines) {
 		int time = 0, processTime;
@@ -74,7 +72,7 @@ public class Schedule {
 		int randInt;
 		Random rand = new Random();
 		Job job = null;
-		@SuppressWarnings("unchecked")   //TODO what??
+		@SuppressWarnings("unchecked")
 		ArrayList<Job> incompleteJobs = (ArrayList<Job>) problem.getJobs().clone();
 		ArrayList<Job> availableJobs = new ArrayList<Job>();
 		
@@ -115,6 +113,7 @@ public class Schedule {
 		this.makespan = scanTime;
 	}
 	
+	// Graphically display assignments
 	public String getAssignmentsString() {
 		String output = "";
 		int machineNum = 0;
