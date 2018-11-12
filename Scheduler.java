@@ -179,7 +179,7 @@ public class Scheduler extends Application {
 					+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + (numGARuns*topNumIndividuals));
 			
 			// Run Wisdom of Crowds scheduling
-			results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
+			results = scheduleWOC(true, problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
 			
 			// Print results
 			//							     Aggregate		     Shortest			 Mean				 Std Dev
@@ -231,7 +231,7 @@ public class Scheduler extends Application {
 			
 			// Run Wisdom of Crowds scheduling
 			for (int idx = 0; idx < numTests; idx++) {
-				results = scheduleWOC(problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
+				results = scheduleWOC(false, problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
 				
 				testResults[0] += results[0];
 				if (testResults[1] == 0 || results[1] < testResults[1]) testResults[1] = results[1];
@@ -291,7 +291,7 @@ public class Scheduler extends Application {
 	}
 	
 	// Schedule and aggregate using Wisdom of Crowds
-	private double[] scheduleWOC(Problem problem, int populationSize, int numGenerations, 
+	private double[] scheduleWOC(boolean displayAssignments, Problem problem, int populationSize, int numGenerations, 
 										double mutationPercent, int numElite, int numGARuns, int topNumIndividuals) {
 		int crowdSize = numGARuns * topNumIndividuals;   // Total number of individuals in the crowd
 		int crowdTotalMakespan = 0;
@@ -328,12 +328,11 @@ public class Scheduler extends Application {
 					}
 				}
 				
-				
-				System.out.println("S" + pIdx + "." + iIdx + " " + schedule);
+				//System.out.println("S" + pIdx + "." + iIdx + " " + schedule);
 			}			
 		}
 			
-		//printMatrix(orderingCounterMatrix, problem);
+		printMatrix(orderingCounterMatrix, problem);
 		
 		aggregateJobs = problem.getJobs();   // Set aggregate jobs as the ordered list of jobs
 		
@@ -366,25 +365,26 @@ public class Scheduler extends Application {
 		results[1] = shortestMakespanSchedule.getMakespan();  
 		results[2] = crowdMeanMakespan; 
 		results[3] = crowdStdDevMakespan;
-
-		System.out.println("Agg:  " + aggregateSchedule.getJobs());
-		System.out.println("Best: " + shortestMakespanSchedule.getJobs());
 		
-		this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+		if (displayAssignments) {
+			System.out.println("Agg:  " + aggregateSchedule.getJobs());
+			System.out.println("Best: " + shortestMakespanSchedule.getJobs());
+			this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+		}
 
 		return results;
 	}
 	
 	@SuppressWarnings("unused")
 	private void printMatrix(int[][] orderingCounterMatrix, Problem problem) {
-		System.out.print("     ");
-		for (int colNum = 0; colNum < problem.getNumJobs(); colNum++) {System.out.print(String.format("%-3s", colNum));} System.out.print("\n");
-		for (int i = 0; i < problem.getNumJobs(); i++) {System.out.print("=====");} 
+		System.out.print("      ");
+		for (int colNum = 0; colNum < problem.getNumJobs(); colNum++) {System.out.print(String.format("J%-4s", colNum));} System.out.print("\n");
+		for (int i = 0; i < problem.getNumJobs(); i++) {System.out.print("======");} 
 		for (int row = 0; row < problem.getNumJobs(); row++) {
-			System.out.print(String.format("\n%-5s", row));
+			System.out.print(String.format("\nJ%-5s", row));
 			for (int col = 0; col < problem.getNumJobs(); col++)
-				if (row == col) System.out.print("   ");
-				else System.out.print(String.format("%-3s", orderingCounterMatrix[row][col]));
+				if (row == col) System.out.print("--   ");
+				else System.out.print(String.format("%-5s", orderingCounterMatrix[row][col]));
 		} System.out.print("\n");
 	}
 	
