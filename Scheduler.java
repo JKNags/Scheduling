@@ -159,6 +159,7 @@ public class Scheduler extends Application {
 		int numElite;
 		double mutationPercent, elitePercent;
 		double[] results;
+		long startTime, stopTime;
 		Problem problem = getProblem(lvFileNames.getSelectionModel().getSelectedItem());
 		DecimalFormat decimalFormat = new DecimalFormat("#0.00");
 		
@@ -179,11 +180,13 @@ public class Scheduler extends Application {
 					+ ", Mutation: " + (mutationPercent*100) + "%, Crowd: " + numGARuns + "x" + topNumIndividuals + "=" + (numGARuns*topNumIndividuals));
 			
 			// Run Wisdom of Crowds scheduling
+			startTime = System.nanoTime();
 			results = scheduleWOC(true, problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
+			stopTime = System.nanoTime();
 			
 			// Print results
-			//							     Aggregate		     Shortest			 Mean				 Std Dev
-			System.out.println("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3]);
+			//							     Aggregate		     Shortest			 Mean				 Std Dev  			 Duration
+			System.out.println("Makespan " + results[0] + "\t" + results[1] + "\t" + results[2] + "\t" + results[3] + "\t" + (stopTime - startTime));
 			this.tfAggregateMakespan.setText(Integer.toString((int) results[0]));
 			this.tfShortestMakespan.setText(Integer.toString((int) results[1]));
 			this.tfDifference.setText((int) (results[0] - results[1]) + " (" + decimalFormat.format(Math.abs(results[0] - results[1]) / ((results[0] + results[1]) / 200.0)) + "%)"); 
@@ -207,6 +210,7 @@ public class Scheduler extends Application {
 		double mutationPercent, elitePercent;
 		double[] results;
 		double[] testResults = new double[4];
+		long startTime, stopTime, duration = 0;
 		Problem problem = getProblem(lvFileNames.getSelectionModel().getSelectedItem());
 		DecimalFormat decimalFormat = new DecimalFormat("#0.00");
 		
@@ -231,21 +235,25 @@ public class Scheduler extends Application {
 			
 			// Run Wisdom of Crowds scheduling
 			for (int idx = 0; idx < numTests; idx++) {
+				startTime = System.nanoTime();
 				results = scheduleWOC(false, problem, populationSize, numGenerations, mutationPercent, numElite, numGARuns, topNumIndividuals);
+				stopTime = System.nanoTime();
 				
 				testResults[0] += results[0];
 				if (testResults[1] == 0 || results[1] < testResults[1]) testResults[1] = results[1];
 				testResults[2] += results[2];
 				testResults[3] += results[3];
+				duration += (stopTime - startTime);
 			}
 			
 			testResults[0] /= (double) numTests;
 			testResults[2] /= (double) numTests;
 			testResults[3] /= (double) numTests;
+			duration /= (double) numTests;
 			
 			// Print results
-			//							                           Aggregate		       Shortest			       Mean				       Std Dev
-			System.out.println("Test " + numTests + " Makespan " + testResults[0] + "\t" + testResults[1] + "\t" + testResults[2] + "\t" + testResults[3]);
+			//							                           Aggregate		       Shortest			       Mean				       Std Dev				   Duration
+			System.out.println("Test " + numTests + " Makespan " + testResults[0] + "\t" + testResults[1] + "\t" + testResults[2] + "\t" + testResults[3] + "\t" + duration);
 			this.tfAggregateMakespan.setText(Integer.toString((int) testResults[0]));
 			this.tfShortestMakespan.setText(Integer.toString((int) testResults[1]));
 			this.tfDifference.setText((int) (testResults[0] - testResults[1]) + " (" + decimalFormat.format(Math.abs(testResults[0] - testResults[1]) / ((testResults[0] + testResults[1]) / 200.0)) + "%)"); 
@@ -257,37 +265,6 @@ public class Scheduler extends Application {
 		} catch (NumberFormatException e) {
 			System.err.println("Input Poorly Formatted " + e.getMessage());
 		}
-	}
-	
-	// Return all text files in directory in a format compatible for a ListView
-	public ObservableList<String> getFileNames() {
-		File folder = new File(this.dirName);
-		File[] fileList = folder.listFiles();
-		ArrayList<String> strFileList = new ArrayList<String>();
-		String[] strSortedFileList = null;
-		ObservableList<String> obFileList = FXCollections.observableArrayList();
-		
-		try {
-			// Get all text files in directory
-			for (File file : fileList) {
-				if (file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) {
-					strFileList.add(file.getName());
-				}
-			}
-			
-			// Sort files by name
-			strSortedFileList = strFileList.toArray(new String[strFileList.size()]);
-			Arrays.sort(strSortedFileList, (f1, f2) -> {
-				return f1.compareTo(f2);
-			});
-			
-	        obFileList.addAll(strSortedFileList);
-	        
-		} catch (NullPointerException e) {
-			System.err.println("Error opening File or folder: " + e.getMessage());
-		}
-		
-		return obFileList;
 	}
 	
 	// Schedule and aggregate using Wisdom of Crowds
@@ -331,8 +308,6 @@ public class Scheduler extends Application {
 				//System.out.println("S" + pIdx + "." + iIdx + " " + schedule);
 			}			
 		}
-			
-		printMatrix(orderingCounterMatrix, problem);
 		
 		aggregateJobs = problem.getJobs();   // Set aggregate jobs as the ordered list of jobs
 		
@@ -367,9 +342,11 @@ public class Scheduler extends Application {
 		results[3] = crowdStdDevMakespan;
 		
 		if (displayAssignments) {
+			printMatrix(orderingCounterMatrix, problem);
 			System.out.println("Agg:  " + aggregateSchedule.getJobs());
 			System.out.println("Best: " + shortestMakespanSchedule.getJobs());
-			this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+			if (problem.getNumJobs() < 101) this.taAggregateAssignments.setText(aggregateSchedule.getAssignmentsString());
+			else this.taAggregateAssignments.setText("");
 		}
 
 		return results;
@@ -580,6 +557,37 @@ public class Scheduler extends Application {
         }
         
         return wheel;
+	}
+	
+	// Return all text files in directory in a format compatible for a ListView
+	public ObservableList<String> getFileNames() {
+		File folder = new File(this.dirName);
+		File[] fileList = folder.listFiles();
+		ArrayList<String> strFileList = new ArrayList<String>();
+		String[] strSortedFileList = null;
+		ObservableList<String> obFileList = FXCollections.observableArrayList();
+		
+		try {
+			// Get all text files in directory
+			for (File file : fileList) {
+				if (file.getName().substring(file.getName().length() - 4, file.getName().length()).equals(".txt")) {
+					strFileList.add(file.getName());
+				}
+			}
+			
+			// Sort files by name
+			strSortedFileList = strFileList.toArray(new String[strFileList.size()]);
+			Arrays.sort(strSortedFileList, (f1, f2) -> {
+				return f1.compareTo(f2);
+			});
+			
+	        obFileList.addAll(strSortedFileList);
+	        
+		} catch (NullPointerException e) {
+			System.err.println("Error opening File or folder: " + e.getMessage());
+		}
+		
+		return obFileList;
 	}
 	
 	// Return a list of jobs and machines from file
